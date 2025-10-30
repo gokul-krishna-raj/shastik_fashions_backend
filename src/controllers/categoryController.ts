@@ -13,6 +13,7 @@ export const createCategory = async (req: Request, res: Response) => {
       name,
       description,
       image,
+      slug: name.split(' ').join('-').toLowerCase(),
     });
 
     apiResponse(res, {

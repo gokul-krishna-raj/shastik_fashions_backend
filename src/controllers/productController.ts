@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Product from '../models/Product';
+import Category from '../models/Category'; // Import Category model
 import { CustomRequest } from '../middleware/authMiddleware';
 import apiResponse from '../utils/apiResponse'; // Import apiResponse
 import paginate from '../utils/pagination'; // Import paginate
@@ -46,11 +47,27 @@ export const createProduct = async (req: CustomRequest, res: Response) => {
 // @access  Public
 export const getProducts = async (req: Request, res: Response) => {
   try {
-    const { page = 1, limit = 10, category, search } = req.query;
+    const { page = 1, limit = 10, category, categorySlug, search } = req.query;
     const query: any = {};
 
     if (category) {
       query.category = category;
+    } else if (categorySlug) {
+      const categoryObject = await Category.findOne({ slug: categorySlug as string });
+      if (categoryObject) {
+        query.category = categoryObject._id;
+      } else {
+        // Return empty array if category slug is not found
+        return apiResponse(res, {
+          statusCode: 200,
+          data: [],
+          count: 0,
+          page: 1,
+          pages: 1,
+          limit: Number(limit),
+          message: 'No products found for this category slug',
+        });
+      }
     }
 
     if (search) {
@@ -78,6 +95,7 @@ export const getProducts = async (req: Request, res: Response) => {
     });
   }
 };
+
 
 // @desc    Get single product
 // @route   GET /api/products/:id

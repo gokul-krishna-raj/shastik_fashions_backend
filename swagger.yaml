@@ -69,6 +69,9 @@ components:
         name:
           type: string
           example: Silk Sarees
+        slug:
+          type: string
+          example: silk-sarees
         description:
           type: string
           example: Exquisite collection of traditional silk sarees.
@@ -393,6 +396,9 @@ paths:
                 name:
                   type: string
                   example: Cotton Sarees
+                slug:
+                  type: string
+                  example: cotton-sarees
                 description:
                   type: string
                   example: Comfortable and elegant cotton sarees for daily wear.
@@ -467,6 +473,9 @@ paths:
                 name:
                   type: string
                   example: Updated Silk Sarees
+                slug:
+                  type: string
+                  example: updated-silk-sarees
                 description:
                   type: string
                   example: New description for silk sarees.
@@ -631,6 +640,11 @@ paths:
           schema:
             type: string
           description: Filter by category ID
+        - in: query
+          name: categorySlug
+          schema:
+            type: string
+          description: Filter by category slug
         - in: query
           name: search
           schema:
