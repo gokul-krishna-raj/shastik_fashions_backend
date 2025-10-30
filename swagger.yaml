@@ -1,0 +1,1369 @@
+openapi: 3.0.0
+info:
+  title: SareeGrace E-Commerce API
+  version: 1.0.0
+  description: API documentation for the SareeGrace E-Commerce backend, built with Node.js, Express, and MongoDB.
+
+servers:
+  - url: http://localhost:5000/api
+    description: Development server
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Auth
+    description: User authentication and authorization
+  - name: Categories
+    description: Product categories management
+  - name: Products
+    description: Product management and listings
+  - name: Cart
+    description: Shopping cart management
+  - name: Wishlist
+    description: User wishlist management
+  - name: Orders
+    description: Order creation and management
+  - name: Payments
+    description: Razorpay payment integration
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 654c2a00a1b2c3d4e5f6a7b8
+        name:
+          type: string
+          example: John Doe
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        mobile:
+          type: string
+          example: '9876543210'
+        role:
+          type: string
+          enum: [user, admin]
+          example: user
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Category:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 654c2a00a1b2c3d4e5f6a7b9
+        name:
+          type: string
+          example: Silk Sarees
+        description:
+          type: string
+          example: Exquisite collection of traditional silk sarees.
+        image:
+          type: string
+          example: /uploads/silk-sarees.jpg
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Product:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 654c2a00a1b2c3d4e5f6a7c0
+        name:
+          type: string
+          example: Kanchipuram Silk Saree
+        description:
+          type: string
+          example: Handwoven Kanchipuram silk saree with intricate zari work.
+        originalPrice:
+          type: number
+          format: float
+          example: 16000.00
+        price:
+          type: number
+          format: float
+          example: 15000.00
+        category:
+          type: string
+          example: 654c2a00a1b2c3d4e5f6a7b9
+        images:
+          type: array
+          items:
+            type: string
+          example: [/uploads/kanchi-saree-1.jpg, /uploads/kanchi-saree-2.jpg]
+        fabric:
+          type: string
+          example: Silk
+        color:
+          type: string
+          example: Red
+        stock:
+          type: number
+          format: integer
+          example: 10
+        isBestSeller:
+          type: boolean
+          example: true
+        isNewArrival:
+          type: boolean
+          example: false
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CartItem:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 654c2a00a1b2c3d4e5f6a7c1
+        user:
+          type: string
+          example: 654c2a00a1b2c3d4e5f6a7b8
+        product:
+          $ref: '#/components/schemas/Product'
+        quantity:
+          type: number
+          format: integer
+          example: 1
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    WishlistItem:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 654c2a00a1b2c3d4e5f6a7c2
+        user:
+          type: string
+          example: 654c2a00a1b2c3d4e5f6a7b8
+        product:
+          $ref: '#/components/schemas/Product'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Order:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 654c2a00a1b2c3d4e5f6a7c3
+        user:
+          type: string
+          example: 654c2a00a1b2c3d4e5f6a7b8
+        products:
+          type: array
+          items:
+            type: object
+            properties:
+              product:
+                $ref: '#/components/schemas/Product'
+              quantity:
+                type: number
+                format: integer
+                example: 1
+        totalAmount:
+          type: number
+          format: float
+          example: 15000.00
+        paymentStatus:
+          type: string
+          enum: [pending, paid, failed]
+          example: paid
+        orderStatus:
+          type: string
+          enum: [pending, processing, shipped, delivered, cancelled]
+          example: processing
+        razorpayOrderId:
+          type: string
+          example: order_xxxxxxxxxxxxxx
+        razorpayPaymentId:
+          type: string
+          example: pay_xxxxxxxxxxxxxx
+        razorpaySignature:
+          type: string
+          example: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Invalid credentials"
+        stack:
+          type: string
+          example: "Error: Invalid credentials at ... (only in development)"
+
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+            example:
+              success: false
+              message: "Invalid input data"
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+            example:
+              success: false
+              message: "Not authorized to access this route"
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+            example:
+              success: false
+              message: "User role admin is not authorized to access this route"
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+            example:
+              success: false
+              message: "Resource not found"
+    ServerError:
+      description: Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+            example:
+              success: false
+              message: "Server Error"
+              stack: "Error: Server Error at ..."
+
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+                - mobile
+              properties:
+                name:
+                  type: string
+                  example: Jane Doe
+                email:
+                  type: string
+                  format: email
+                  example: jane.doe@example.com
+                password:
+                  type: string
+                  example: password123
+                mobile:
+                  type: string
+                  example: '9988776655'
+                role:
+                  type: string
+                  enum: [user, admin]
+                  example: user
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /auth/login:
+    post:
+      summary: Log in a user
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: john.doe@example.com
+                password:
+                  type: string
+                  example: password123
+      responses:
+        '200':
+          description: User logged in successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /categories:
+    post:
+      summary: Create a new category (Admin only)
+      tags: [Categories]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - description
+              properties:
+                name:
+                  type: string
+                  example: Cotton Sarees
+                description:
+                  type: string
+                  example: Comfortable and elegant cotton sarees for daily wear.
+                image:
+                  type: string
+                  example: /uploads/cotton-sarees.jpg
+      responses:
+        '201':
+          description: Category created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Category'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    get:
+      summary: Get all categories
+      tags: [Categories]
+      responses:
+        '200':
+          description: Categories fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: number
+                    example: 2
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Category'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /categories/{id}:
+    put:
+      summary: Update a category by ID (Admin only)
+      tags: [Categories]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID of the category to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Updated Silk Sarees
+                description:
+                  type: string
+                  example: New description for silk sarees.
+      responses:
+        '200':
+          description: Category updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Category'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    delete:
+      summary: Delete a category by ID (Admin only)
+      tags: [Categories]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID of the category to delete
+      responses:
+        '200':
+          description: Category deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    example: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /products:
+    post:
+      summary: Create a new product (Admin only, with image upload)
+      tags: [Products]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - description
+                - originalPrice
+                - price
+                - category
+                - fabric
+                - color
+                - stock
+              properties:
+                name:
+                  type: string
+                  example: Banarasi Silk Saree
+                description:
+                  type: string
+                  example: Luxurious Banarasi silk saree with traditional motifs.
+                originalPrice:
+                  type: number
+                  format: float
+                  example: 26000.00
+                price:
+                  type: number
+                  format: float
+                  example: 25000.00
+                category:
+                  type: string
+                  example: 654c2a00a1b2c3d4e5f6a7b9
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Up to 5 image files
+                fabric:
+                  type: string
+                  example: Silk
+                color:
+                  type: string
+                  example: Green
+                stock:
+                  type: number
+                  format: integer
+                  example: 5
+                isBestSeller:
+                  type: boolean
+                  example: true
+                isNewArrival:
+                  type: boolean
+                  example: true
+      responses:
+        '201':
+          description: Product created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    get:
+      summary: Get all products (with pagination and filters)
+      tags: [Products]
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: number
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          schema:
+            type: number
+            default: 10
+          description: Number of items per page
+        - in: query
+          name: category
+          schema:
+            type: string
+          description: Filter by category ID
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search by product name
+      responses:
+        '200':
+          description: Products fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: number
+                    example: 1
+                  total:
+                    type: number
+                    example: 1
+                  page:
+                    type: number
+                    example: 1
+                  pages:
+                    type: number
+                    example: 1
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /products/{id}:
+    get:
+      summary: Get a single product by ID
+      tags: [Products]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID of the product to retrieve
+      responses:
+        '200':
+          description: Product fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Product'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    put:
+      summary: Update a product by ID (Admin only, with optional image upload)
+      tags: [Products]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID of the product to update
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Updated Banarasi Saree
+                description:
+                  type: string
+                  example: Updated description for the Banarasi silk saree.
+                originalPrice:
+                  type: number
+                  format: float
+                  example: 27000.00
+                price:
+                  type: number
+                  format: float
+                  example: 26000.00
+                category:
+                  type: string
+                  example: 654c2a00a1b2c3d4e5f6a7b9
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Up to 5 new image files (replaces existing images)
+                fabric:
+                  type: string
+                  example: Pure Silk
+                color:
+                  type: string
+                  example: Royal Blue
+                stock:
+                  type: number
+                  format: integer
+                  example: 7
+                isBestSeller:
+                  type: boolean
+                  example: false
+                isNewArrival:
+                  type: boolean
+                  example: true
+      responses:
+        '200':
+          description: Product updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    delete:
+      summary: Delete a product by ID (Admin only)
+      tags: [Products]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID of the product to delete
+      responses:
+        '200':
+          description: Product deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    example: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /cart:
+    post:
+      summary: Add item to cart (Authenticated user only)
+      tags: [Cart]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - productId
+                - quantity
+              properties:
+                productId:
+                  type: string
+                  example: 654c2a00a1b2c3d4e5f6a7c0
+                quantity:
+                  type: number
+                  format: integer
+                  example: 1
+      responses:
+        '201':
+          description: Item added to cart successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/CartItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    get:
+      summary: Get user's cart items (Authenticated user only)
+      tags: [Cart]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Cart items fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: number
+                    example: 1
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CartItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /cart/{id}:
+    delete:
+      summary: Remove item from cart by ID (Authenticated user only)
+      tags: [Cart]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID of the cart item to remove
+      responses:
+        '200':
+          description: Cart item removed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    example: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /wishlist:
+    post:
+      summary: Add item to wishlist (Authenticated user only)
+      tags: [Wishlist]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - productId
+              properties:
+                productId:
+                  type: string
+                  example: 654c2a00a1b2c3d4e5f6a7c0
+      responses:
+        '201':
+          description: Item added to wishlist successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/WishlistItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    get:
+      summary: Get user's wishlist items (Authenticated user only)
+      tags: [Wishlist]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Wishlist items fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: number
+                    example: 1
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WishlistItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /wishlist/{id}:
+    delete:
+      summary: Remove item from wishlist by ID (Authenticated user only)
+      tags: [Wishlist]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID of the wishlist item to remove
+      responses:
+        '200':
+          description: Wishlist item removed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    example: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /orders:
+    post:
+      summary: Create a new order (Authenticated user only, after payment verification)
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - products
+                - totalAmount
+                - paymentStatus
+              properties:
+                products:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - product
+                      - quantity
+                    properties:
+                      product:
+                        type: string
+                        example: 654c2a00a1b2c3d4e5f6a7c0
+                      quantity:
+                        type: number
+                        format: integer
+                        example: 1
+                totalAmount:
+                  type: number
+                  format: float
+                  example: 15000.00
+                paymentStatus:
+                  type: string
+                  enum: [pending, paid, failed]
+                  example: paid
+                razorpayOrderId:
+                  type: string
+                  example: order_xxxxxxxxxxxxxx
+                razorpayPaymentId:
+                  type: string
+                  example: pay_xxxxxxxxxxxxxx
+                razorpaySignature:
+                  type: string
+                  example: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      responses:
+        '201':
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    get:
+      summary: Get all orders for the authenticated user (with pagination)
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: number
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          schema:
+            type: number
+            default: 10
+          description: Number of items per page
+      responses:
+        '200':
+          description: User orders fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: number
+                    example: 1
+                  page:
+                    type: number
+                    example: 1
+                  pages:
+                    type: number
+                    example: 1
+                  limit:
+                    type: number
+                    example: 10
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /orders/admin:
+    get:
+      summary: Get all orders (Admin only, with pagination)
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: number
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          schema:
+            type: number
+            default: 10
+          description: Number of items per page
+      responses:
+        '200':
+          description: All orders fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: number
+                    example: 1
+                  page:
+                    type: number
+                    example: 1
+                  pages:
+                    type: number
+                    example: 1
+                  limit:
+                    type: number
+                    example: 10
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /orders/{id}/status:
+    put:
+      summary: Update order status by ID (Admin only)
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID of the order to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - orderStatus
+              properties:
+                orderStatus:
+                  type: string
+                  enum: [pending, processing, shipped, delivered, cancelled]
+                  example: shipped
+      responses:
+        '200':
+          description: Order status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /payment/order:
+    post:
+      summary: Create a new Razorpay order (Authenticated user only)
+      tags: [Payments]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+                - products
+              properties:
+                amount:
+                  type: number
+                  format: float
+                  example: 15000.00
+                products:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - product
+                      - quantity
+                    properties:
+                      product:
+                        type: string
+                        example: 654c2a00a1b2c3d4e5f6a7c0
+                      quantity:
+                        type: number
+                        format: integer
+                        example: 1
+      responses:
+        '201':
+          description: Razorpay order created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  orderId:
+                    type: string
+                    example: order_xxxxxxxxxxxxxx
+                  amount:
+                    type: number
+                    example: 1500000
+                  currency:
+                    type: string
+                    example: INR
+                  receipt:
+                    type: string
+                    example: receipt_1678886400000
+                  orderDbId:
+                    type: string
+                    example: 654c2a00a1b2c3d4e5f6a7c3
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /payment/verify:
+    post:
+      summary: Verify Razorpay payment signature (Authenticated user only)
+      tags: [Payments]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - razorpay_order_id
+                - razorpay_payment_id
+                - razorpay_signature
+                - orderDbId
+              properties:
+                razorpay_order_id:
+                  type: string
+                  example: order_xxxxxxxxxxxxxx
+                razorpay_payment_id:
+                  type: string
+                  example: pay_xxxxxxxxxxxxxx
+                razorpay_signature:
+                  type: string
+                  example: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                orderDbId:
+                  type: string
+                  example: 654c2a00a1b2c3d4e5f6a7c3
+      responses:
+        '200':
+          description: Payment verified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Payment verified successfully
+        '400':
+          description: Payment verification failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Payment verification failed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+
