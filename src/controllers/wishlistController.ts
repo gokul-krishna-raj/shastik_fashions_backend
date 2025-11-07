@@ -2,6 +2,7 @@ import { Response } from 'express';
 import Wishlist from '../models/Wishlist';
 import { CustomRequest } from '../middleware/authMiddleware';
 import apiResponse from '../utils/apiResponse'; // Import apiResponse
+import mongoose from 'mongoose';
 
 // @desc    Add item to wishlist
 // @route   POST /api/wishlist
@@ -89,7 +90,7 @@ export const removeWishlistItem = async (req: CustomRequest, res: Response) => {
       });
     }
 
-    const wishlistItem = await Wishlist.findOneAndDelete({ _id: req.params.id, user: userId });
+    const wishlistItem = await Wishlist.findOneAndDelete({ product: req.params.id, user: userId });
 
     if (!wishlistItem) {
       return apiResponse(res, {

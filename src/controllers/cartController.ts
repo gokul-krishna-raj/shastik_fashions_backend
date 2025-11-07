@@ -97,7 +97,7 @@ export const removeCartItem = async (req: CustomRequest, res: Response) => {
       });
     }
 
-    const cartItem = await Cart.findOneAndDelete({ _id: req.params.id, user: userId });
+    const cartItem = await Cart.findOneAndDelete({ product: req.params.id, user: userId });
 
     if (!cartItem) {
       return apiResponse(res, {

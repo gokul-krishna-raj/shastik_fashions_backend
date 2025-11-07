@@ -1,4 +1,3 @@
-
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import Category from '../models/Category';
@@ -11,41 +10,65 @@ const seedSareeCategories = async () => {
 
   try {
     await Category.deleteMany({});
-    console.log('Categories cleared');
+    console.log('Old categories cleared ✅');
 
     const categories = [
       {
-        name: 'Banarasi',
-        description: 'Banarasi sarees are known for their gold and silver brocade or zari, fine silk and opulent embroidery.',
+        name: 'Wedding Silk',
+        slug: 'wedding-silk',
+        description: 'Luxurious silk sarees perfect for weddings and grand celebrations, featuring rich zari and traditional motifs.',
         image: 'no-photo.jpg',
       },
       {
-        name: 'Kanjeevaram',
-        description: 'Kanjeevaram sarees are made from pure mulberry silk thread. The sarees are known for their vibrant colors and excellent craftsmanship.',
+        name: 'Soft Silk',
+        slug: 'soft-silk',
+        description: 'Lightweight and comfortable silk sarees with a smooth texture, ideal for both festive and casual wear.',
         image: 'no-photo.jpg',
       },
       {
-        name: 'Chanderi',
-        description: 'Chanderi sarees are produced from three kinds of fabric: pure silk, Chanderi cotton and silk cotton.',
+        name: 'Elegant Silk',
+        slug: 'elegant-silk',
+        description: 'Graceful silk sarees designed for sophistication, blending modern patterns with traditional elegance.',
         image: 'no-photo.jpg',
       },
       {
-        name: 'Bandhani',
-        description: 'Bandhani is a type of tie-dye textile decorated by plucking the cloth with the fingernails into many tiny bindings that form a figurative design.',
+        name: 'Cotton',
+        slug: 'cotton',
+        description: 'Breathable and comfortable cotton sarees for daily wear, suitable for all seasons.',
         image: 'no-photo.jpg',
       },
       {
-        name: 'Paithani',
-        description: 'Paithani is a variety of saree, which is named after the Paithan town in Aurangabad, Maharashtra where they are woven by hand.',
+        name: 'Kerala Cotton',
+        slug: 'kerala-cotton',
+        description: 'Traditional white and gold bordered sarees from Kerala, symbolizing simplicity and purity.',
+        image: 'no-photo.jpg',
+      },
+      {
+        name: 'Kubera Pattu',
+        slug: 'kubera-pattu',
+        description: 'Richly woven silk sarees known for their grandeur, inspired by traditional South Indian weaving techniques.',
+        image: 'no-photo.jpg',
+      },
+      {
+        name: 'Poontamil Sarees',
+        slug: 'poontamil-sarees',
+        description: 'Beautifully crafted sarees from Tamil Nadu, known for vibrant colors and cultural heritage.',
+        image: 'no-photo.jpg',
+      },
+      {
+        name: 'Printed Cotton Saree',
+        slug: 'printed-cotton-saree',
+        description: 'Stylish printed cotton sarees with modern and ethnic designs, perfect for everyday elegance.',
         image: 'no-photo.jpg',
       },
     ];
 
+
     await Category.insertMany(categories);
-    console.log('Saree categories have been added.');
+    console.log('✅ Saree categories added successfully!');
     process.exit();
   } catch (error) {
-    console.error(`Error: ${error}`);
+    console.error(`❌ Error: ${error}`);
     process.exit(1);
   }
 };

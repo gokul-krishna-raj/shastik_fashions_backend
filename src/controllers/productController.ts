@@ -226,11 +226,12 @@ export const getBestSellers = async (req: Request, res: Response) => {
     const { page = 1, limit = 10 } = req.query;
     const query = { isBestSeller: true };
     const result = await paginate(Product, query, Number(page), Number(limit), 'category');
-
+    console.log("result =>", result);
+    
     apiResponse(res, {
       statusCode: 200,
-      data: result.docs,
-      count: result.totalDocs,
+      data: result.data,
+      count: result.count,
       page: result.page,
       pages: result.totalPages,
       limit: result.limit,
@@ -257,8 +258,8 @@ export const getNewArrivals = async (req: Request, res: Response) => {
 
     apiResponse(res, {
       statusCode: 200,
-      data: result.docs,
-      count: result.totalDocs,
+      data: result.data,
+      count: result.count,
       page: result.page,
       pages: result.totalPages,
       limit: result.limit,
