@@ -22,7 +22,7 @@ export const addItemToCart = async (req: CustomRequest, res: Response) => {
     let cartItem = await Cart.findOne({ user: userId, product: productId });
 
     if (cartItem) {
-      cartItem.quantity += quantity;
+      cartItem.quantity = quantity;
       await cartItem.save();
     } else {
       cartItem = await Cart.create({
