@@ -1,80 +1,70 @@
 import { Response } from 'express';
+import crypto from 'crypto';
 import Order from '../models/Order';
+import Product from '../models/Product';
+import Cart from '../models/Cart';
 import { CustomRequest } from '../middleware/authMiddleware';
-import apiResponse from '../utils/apiResponse'; // Import apiResponse
-import paginate from '../utils/pagination'; // Import paginate
+import apiResponse from '../utils/apiResponse';
+import { razorpay } from '../config/razorpay';
+import paginate from '../utils/pagination';
 
-// @desc    Create new order (after payment verification)
-// @route   POST /api/orders
+// @desc    Confirm order and create new order
+// @route   POST /api/orders/confirm
 // @access  Private
-export const createOrder = async (req: CustomRequest, res: Response) => {
-  try {
-    const { products, totalAmount, paymentStatus, razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
-    const userId = req.user?.id;
+export const confirmOrder = async (req: CustomRequest, res: Response) => {
+  const { razorpayOrderId, razorpayPaymentId, razorpaySignature, products, shippingAddress, totalAmount } = req.body;
+  const userId = req.user?.id;
 
-    if (!userId) {
+  if (!userId) {
+    return apiResponse(res, {
+      success: false,
+      statusCode: 401,
+      message: 'Not authorized',
+    });
+  }
+
+  try {
+    const generated_signature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET!)
+      .update(razorpayOrderId + '|' + razorpayPaymentId)
+      .digest('hex');
+
+    if (generated_signature !== razorpaySignature) {
       return apiResponse(res, {
         success: false,
-        statusCode: 401,
-        message: 'Not authorized',
+        statusCode: 400,
+        message: 'Invalid Razorpay signature',
       });
     }
 
+    // Create a new order
     const order = await Order.create({
       user: userId,
       products,
+      shippingAddress,
       totalAmount,
-      paymentStatus,
+      paymentMethod: 'Razorpay',
+      paymentStatus: 'paid',
       razorpayOrderId,
       razorpayPaymentId,
       razorpaySignature,
-      orderStatus: 'pending', // Initial status
+      orderStatus: 'processing',
     });
 
-    apiResponse(res, {
-      statusCode: 201,
-      data: order,
-      message: 'Order created successfully',
-    });
-  } catch (error: any) {
-    console.error(error.message);
-    apiResponse(res, {
-      success: false,
-      statusCode: 500,
-      message: 'Server Error',
-      stack: error.stack,
-    });
-  }
-};
-
-// @desc    Get all orders for logged in user
-// @route   GET /api/orders
-// @access  Private
-export const getUserOrders = async (req: CustomRequest, res: Response) => {
-  try {
-    const userId = req.user?.id;
-
-    if (!userId) {
-      return apiResponse(res, {
-        success: false,
-        statusCode: 401,
-        message: 'Not authorized',
+    // Update product stock
+    for (const item of products) {
+      await Product.findByIdAndUpdate(item.product, {
+        $inc: { stock: -item.quantity },
       });
     }
 
-    const { page = 1, limit = 10 } = req.query;
-    const query = { user: userId };
-
-    const paginatedResult = await paginate(Order, query, Number(page), Number(limit), 'products.product');
+    // Clear user's cart
+    await Cart.deleteMany({ user: userId });
 
     apiResponse(res, {
-      statusCode: 200,
-      data: paginatedResult.data,
-      count: paginatedResult.count,
-      page: paginatedResult.page,
-      pages: paginatedResult.pages,
-      limit: paginatedResult.limit,
-      message: 'User orders fetched successfully',
+      statusCode: 201,
+      data: { orderId: order._id },
+      message: 'Order confirmed successfully',
     });
   } catch (error: any) {
     console.error(error.message);

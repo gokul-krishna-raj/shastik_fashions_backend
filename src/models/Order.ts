@@ -6,9 +6,10 @@ export interface IOrder extends Document {
     product: mongoose.Schema.Types.ObjectId;
     quantity: number;
   }[];
+  shippingAddress: string;
   totalAmount: number;
   paymentStatus: 'pending' | 'paid' | 'failed';
-  orderStatus: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'; // Added orderStatus
+  orderStatus: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   razorpayOrderId?: string;
   razorpayPaymentId?: string;
   razorpaySignature?: string;
@@ -35,6 +36,10 @@ const OrderSchema: Schema = new Schema(
         },
       },
     ],
+    shippingAddress: {
+      type: String,
+      required: false,
+    },
     totalAmount: {
       type: Number,
       required: true,
@@ -44,7 +49,7 @@ const OrderSchema: Schema = new Schema(
       enum: ['pending', 'paid', 'failed'],
       default: 'pending',
     },
-    orderStatus: { // Added orderStatus field
+    orderStatus: {
       type: String,
       enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
       default: 'pending',

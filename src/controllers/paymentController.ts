@@ -42,16 +42,29 @@ export const createRazorpayOrder = async (req: CustomRequest, res: Response) => 
       razorpayOrderId: razorpayOrder.id,
       paymentStatus: 'pending',
     });
+console.log("order =>", order);
+console.log("razorpayOrder =>", razorpayOrder);
 
-    apiResponse(res, {
-      statusCode: 201,
+
+
+   return res.status(201).json({
+      success: true,
+      message: 'Razorpay order created successfully',
       orderId: razorpayOrder.id,
       amount: razorpayOrder.amount,
       currency: razorpayOrder.currency,
       receipt: razorpayOrder.receipt,
       orderDbId: order._id,
-      message: 'Razorpay order created successfully',
     });
+    // apiResponse(res, {
+    //   statusCode: 201,
+    //   // orderId: razorpayOrder.id,
+    //   amount: razorpayOrder.amount,
+    //   currency: razorpayOrder.currency,
+    //   receipt: razorpayOrder.receipt,
+    //   orderDbId: order._id,
+    //   message: 'Razorpay order created successfully',
+    // });
   } catch (error: any) {
     console.error(error.message);
     apiResponse(res, {

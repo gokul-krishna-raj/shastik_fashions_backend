@@ -26,6 +26,8 @@ tags:
     description: Order creation and management
   - name: Payments
     description: Razorpay payment integration
+  - name: Address
+    description: User address management
 
 components:
   securitySchemes:
@@ -213,6 +215,51 @@ components:
         razorpaySignature:
           type: string
           example: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Address:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 654c2a00a1b2c3d4e5f6a7d0
+        user:
+          type: string
+          example: 654c2a00a1b2c3d4e5f6a7b8
+        fullName:
+          type: string
+          example: John Doe
+        phone:
+          type: string
+          example: "9876543210"
+        email:
+          type: string
+          example: "john.doe@example.com"
+        addressLine1:
+          type: string
+          example: "123, Main Street"
+        addressLine2:
+          type: string
+          example: "Apt 4B"
+        city:
+          type: string
+          example: "Mumbai"
+        state:
+          type: string
+          example: "Maharashtra"
+        pincode:
+          type: string
+          example: "400001"
+        country:
+          type: string
+          example: "India"
+        isDefault:
+          type: boolean
+          example: true
         createdAt:
           type: string
           format: date-time
@@ -1020,6 +1067,235 @@ paths:
                   data:
                     type: object
                     example: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /address:
+    post:
+      summary: Add a new address for the logged-in user
+      tags: [Address]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - fullName
+                - phone
+                - email
+                - addressLine1
+                - city
+                - state
+                - pincode
+              properties:
+                fullName:
+                  type: string
+                  example: "Jane Doe"
+                phone:
+                  type: string
+                  example: "9988776655"
+                email:
+                  type: string
+                  example: "jane.doe@example.com"
+                addressLine1:
+                  type: string
+                  example: "456, Park Avenue"
+                addressLine2:
+                  type: string
+                  example: "Floor 3"
+                city:
+                  type: string
+                  example: "Pune"
+                state:
+                  type: string
+                  example: "Maharashtra"
+                pincode:
+                  type: string
+                  example: "411001"
+                country:
+                  type: string
+                  example: "India"
+                isDefault:
+                  type: boolean
+                  example: false
+      responses:
+        '201':
+          description: Address added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Address'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    get:
+      summary: Fetch all addresses for the logged-in user
+      tags: [Address]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Addresses fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Address'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /address/{id}:
+    put:
+      summary: Update a specific address
+      tags: [Address]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID of the address to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                  example: "Jane Doe Smith"
+                phone:
+                  type: string
+                  example: "9988776650"
+                email:
+                  type: string
+                  example: "jane.smith@example.com"
+                addressLine1:
+                  type: string
+                  example: "789, Oak Road"
+                addressLine2:
+                  type: string
+                  example: ""
+                city:
+                  type: string
+                  example: "Mumbai"
+                state:
+                  type: string
+                  example: "Maharashtra"
+                pincode:
+                  type: string
+                  example: "400001"
+                country:
+                  type: string
+                  example: "India"
+                isDefault:
+                  type: boolean
+                  example: true
+      responses:
+        '200':
+          description: Address updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Address'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    delete:
+      summary: Delete a specific address
+      tags: [Address]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID of the address to delete
+      responses:
+        '200':
+          description: Address deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /address/{id}/default:
+    patch:
+      summary: Mark an address as default
+      tags: [Address]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID of the address to set as default
+      responses:
+        '200':
+          description: Default address set successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Address'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
