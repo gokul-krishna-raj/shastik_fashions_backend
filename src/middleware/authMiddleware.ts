@@ -38,6 +38,8 @@ export const protect = async (
 
     next();
   } catch (err) {
+    console.log("err =>",err);
+    
     return res.status(401).json({ message: 'Not authorized to access this route' });
   }
 };

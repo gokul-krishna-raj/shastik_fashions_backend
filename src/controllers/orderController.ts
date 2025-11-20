@@ -37,6 +37,9 @@ export const confirmOrder = async (req: CustomRequest, res: Response) => {
       });
     }
 
+    const estimatedDelivery = new Date();
+    estimatedDelivery.setDate(estimatedDelivery.getDate() + 7);
+
     // Create a new order
     const order = await Order.create({
       user: userId,
@@ -49,6 +52,7 @@ export const confirmOrder = async (req: CustomRequest, res: Response) => {
       razorpayPaymentId,
       razorpaySignature,
       orderStatus: 'processing',
+      estimatedDelivery,
     });
 
     // Update product stock
@@ -63,6 +67,7 @@ export const confirmOrder = async (req: CustomRequest, res: Response) => {
 
     apiResponse(res, {
       statusCode: 201,
+      success: true,
       data: { orderId: order._id },
       message: 'Order confirmed successfully',
     });
@@ -73,6 +78,42 @@ export const confirmOrder = async (req: CustomRequest, res: Response) => {
       statusCode: 500,
       message: 'Server Error',
       stack: error.stack,
+    });
+  }
+};
+
+// @desc    Get order by ID
+// @route   GET /api/orders/:orderId
+// @access  Private
+export const getOrderById = async (req: CustomRequest, res: Response) => {
+  try {
+    const order = await Order.findById(req.params.orderId)
+      .populate('user', 'name email')
+      .populate('products.product', 'name price image')
+      .populate('shippingAddress');
+
+
+
+    if (!order) {
+      return apiResponse(res, {
+        statusCode: 404,
+        success: false,
+        message: 'Order not found',
+      });
+    }
+
+    return apiResponse(res, {
+      statusCode: 200,
+      success: true,
+      data: order,
+      message: 'Order details fetched successfully',
+    });
+  } catch (error: any) {
+    console.error(error.message);
+    return apiResponse(res, {
+      statusCode: 500,
+      success: false,
+      message: 'Server Error',
     });
   }
 };

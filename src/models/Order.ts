@@ -13,6 +13,7 @@ export interface IOrder extends Document {
   razorpayOrderId?: string;
   razorpayPaymentId?: string;
   razorpaySignature?: string;
+  estimatedDelivery?: Date;
 }
 
 const OrderSchema: Schema = new Schema(
@@ -36,10 +37,7 @@ const OrderSchema: Schema = new Schema(
         },
       },
     ],
-    shippingAddress: {
-      type: String,
-      required: false,
-    },
+    shippingAddress: { type: mongoose.Schema.Types.ObjectId, ref: 'Address' },
     totalAmount: {
       type: Number,
       required: true,
@@ -63,6 +61,9 @@ const OrderSchema: Schema = new Schema(
     razorpaySignature: {
       type: String,
     },
+    estimatedDelivery: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
@@ -72,3 +73,4 @@ const OrderSchema: Schema = new Schema(
 const Order = mongoose.model<IOrder>('Order', OrderSchema);
 
 export default Order;
+

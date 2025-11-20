@@ -8,8 +8,10 @@ export interface IUser extends Document {
   password?: string; // password is optional because it won't be returned in queries
   mobile: string;
   role: 'user' | 'admin';
+  refreshToken?: string;
   comparePassword: (candidatePassword: string) => Promise<boolean>;
   generateAuthToken: () => string;
+  generateRefreshToken: () => string;
 }
 
 const UserSchema: Schema = new Schema(
@@ -43,6 +45,9 @@ const UserSchema: Schema = new Schema(
       enum: ['user', 'admin'],
       default: 'user',
     },
+    refreshToken: {
+      type: String,
+    },
   },
   {
     timestamps: true,
@@ -70,6 +75,14 @@ UserSchema.methods.generateAuthToken = function () {
   });
 };
 
+// Generate Refresh token
+UserSchema.methods.generateRefreshToken = function () {
+  return jwt.sign({ id: this._id }, process.env.REFRESH_TOKEN_SECRET as string, {
+    expiresIn: process.env.REFRESH_TOKEN_EXPIRE,
+  });
+};
+
 const User = mongoose.model<IUser>('User', UserSchema);
 
 export default User;
+
