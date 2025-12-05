@@ -31,7 +31,7 @@ const limiter = rateLimit({
   max: 100, // Limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again after 15 minutes',
 });
-app.use(limiter);
+// app.use(limiter);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

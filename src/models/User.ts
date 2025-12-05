@@ -68,19 +68,18 @@ UserSchema.methods.comparePassword = async function (candidatePassword: string) 
   return await bcrypt.compare(candidatePassword, this.password as string);
 };
 
-// Generate JWT token
 UserSchema.methods.generateAuthToken = function () {
   return jwt.sign({ id: this._id }, process.env.JWT_SECRET as string, {
-    expiresIn: process.env.JWT_EXPIRE,
+    expiresIn: process.env.JWT_EXPIRE as string,
   });
 };
 
-// Generate Refresh token
 UserSchema.methods.generateRefreshToken = function () {
   return jwt.sign({ id: this._id }, process.env.REFRESH_TOKEN_SECRET as string, {
-    expiresIn: process.env.REFRESH_TOKEN_EXPIRE,
+    expiresIn: process.env.REFRESH_TOKEN_EXPIRE as string,
   });
 };
+
 
 const User = mongoose.model<IUser>('User', UserSchema);
 
