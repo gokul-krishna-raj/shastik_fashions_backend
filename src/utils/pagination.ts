@@ -1,9 +1,9 @@
 import { Document, Model, Query } from 'mongoose';
 
 interface PaginatedResult<T> {
-  docs: any;
-  totalDocs: any;
-  totalPages: any;
+  docs?: any;
+  totalDocs: number;
+  totalPages: number;
   data: T[];
   count: number;
   page: number;
@@ -16,7 +16,8 @@ const paginate = async <T extends Document>(
   query: object = {},
   page: number = 1,
   limit: number = 10,
-  populateOptions?: string | string[]
+  populateOptions?: string | string[],
+  sortOptions?: string | object
 ): Promise<PaginatedResult<T>> => {
   const startIndex = (page - 1) * limit;
   const endIndex = page * limit;
@@ -24,6 +25,10 @@ const paginate = async <T extends Document>(
   const totalCount = await model.countDocuments(query);
 
   let queryBuilder: Query<T[], T> = model.find(query);
+
+  if (sortOptions) {
+    queryBuilder = queryBuilder.sort(sortOptions as any);
+  }
 
   if (populateOptions) {
     if (Array.isArray(populateOptions)) {
@@ -41,6 +46,7 @@ const paginate = async <T extends Document>(
 
   return {
     data,
+    totalDocs: totalCount,
     count: data.length,
     page,
     pages: totalPages,

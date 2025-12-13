@@ -123,10 +123,98 @@ export const getOrderById = async (req: CustomRequest, res: Response) => {
 // @access  Private/Admin
 export const getAllOrders = async (req: CustomRequest, res: Response) => {
   try {
-    const { page = 1, limit = 10 } = req.query;
-    const query = {};
+    const { page = 1, limit = 10, status, startDate, endDate, sort = '-createdAt', q, user } = req.query;
 
-    const paginatedResult = await paginate(Order, query, Number(page), Number(limit), ['user', 'products.product']);
+    const query: any = {};
+
+    // Filter by order status
+    if (status) {
+      query.orderStatus = status;
+    }
+
+    // Filter by specific user id
+    if (user) {
+      query.user = user;
+    }
+
+    // Filter by date range
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) {
+        const sd = new Date(startDate as string);
+        if (!isNaN(sd.getTime())) query.createdAt.$gte = sd;
+      }
+      if (endDate) {
+        const ed = new Date(endDate as string);
+        if (!isNaN(ed.getTime())) query.createdAt.$lte = ed;
+      }
+    }
+
+    // Search by order id or user id
+    if (q) {
+      const qStr = String(q);
+      // If looks like an ObjectId, search in _id or user
+      if (/^[0-9a-fA-F]{24}$/.test(qStr)) {
+        query.$or = [{ _id: qStr }, { user: qStr }];
+      }
+    }
+
+    // Fetch paginated results
+    const paginatedResult = await paginate(
+      Order,
+      query,
+      Number(page),
+      Number(limit),
+      ['user', 'products.product'],
+      sort as string
+    );
+
+
+    apiResponse(res, {
+      statusCode: 200,
+      data: paginatedResult.data,
+      count: paginatedResult.count,
+      totalDocs: paginatedResult.totalDocs,
+      page: paginatedResult.page,
+      pages: paginatedResult.pages,
+      limit: paginatedResult.limit,
+      message: 'All orders fetched successfully',
+    });
+  } catch (error: any) {
+    console.error(error.message);
+    apiResponse(res, {
+      success: false,
+      statusCode: 500,
+      message: 'Server Error',
+      stack: error.stack,
+    });
+  }
+};
+
+// @desc    Get current user's orders (paginated)
+// @route   GET /api/orders
+// @access  Private
+export const getUserOrders = async (req: CustomRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return apiResponse(res, {
+        success: false,
+        statusCode: 401,
+        message: 'Not authorized',
+      });
+    }
+
+    const { page = 1, limit = 10, sort = '-createdAt' } = req.query;
+
+    const paginatedResult = await paginate(
+      Order,
+      { user: userId },
+      Number(page),
+      Number(limit),
+      ['products.product'],
+      sort as string
+    );
 
     apiResponse(res, {
       statusCode: 200,
@@ -135,7 +223,7 @@ export const getAllOrders = async (req: CustomRequest, res: Response) => {
       page: paginatedResult.page,
       pages: paginatedResult.pages,
       limit: paginatedResult.limit,
-      message: 'All orders fetched successfully',
+      message: 'User orders fetched successfully',
     });
   } catch (error: any) {
     console.error(error.message);

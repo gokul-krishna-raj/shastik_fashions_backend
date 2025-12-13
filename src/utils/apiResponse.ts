@@ -6,6 +6,7 @@ interface ApiResponseOptions {
   statusCode?: number;
   data?: any;
   count?: number;
+  totalDocs?: number;
   page?: number;
   pages?: number;
   limit?: number;
@@ -25,6 +26,7 @@ const apiResponse = (res: Response, options: ApiResponseOptions) => {
     limit,
     token,
     stack,
+    totalDocs,
   } = options;
 
   res.status(statusCode).json({
@@ -32,6 +34,7 @@ const apiResponse = (res: Response, options: ApiResponseOptions) => {
     message,
     ...(data && { data }),
     ...(count !== undefined && { count }),
+    ...(totalDocs !== undefined && { totalDocs }),
     ...(page !== undefined && { page }),
     ...(pages !== undefined && { pages }),
     ...(limit !== undefined && { limit }),

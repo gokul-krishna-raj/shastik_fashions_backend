@@ -4,6 +4,7 @@ import {
   updateOrderStatus,
   getAllOrders,
   getOrderById,
+  getUserOrders,
 } from '../controllers/orderController';
 import { protect, authorize } from '../middleware/authMiddleware';
 import validate from '../middleware/validationMiddleware';
@@ -15,6 +16,7 @@ import {
 const router = Router();
 
 router.route('/confirm').post(protect, validate(confirmOrderSchema), confirmOrder);
+router.route('/').get(protect, getUserOrders);
 router.route('/admin').get(protect, authorize('admin'), getAllOrders);
 router
   .route('/:orderId/status')
