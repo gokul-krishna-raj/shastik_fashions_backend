@@ -9,8 +9,36 @@ import paginate from '../utils/pagination'; // Import paginate
 // @route   POST /api/products
 // @access  Private/Admin
 export const createProduct = async (req: CustomRequest, res: Response) => {
-        try {
-          const { name, description, originalPrice, price, category, fabric, color, stock, isBestSeller, isNewArrival } = req.body;    const images = (req.files as Express.Multer.File[]).map(file => `/uploads/${file.filename}`);
+  try {
+    const { name, description, originalPrice, price, category, fabric, color, stock, isBestSeller, isNewArrival } = req.body;
+    let images: string[] = [];
+    let imageUrls: string[] = req.body.images;
+    const hasFiles = req.files && (req.files as Express.Multer.File[]).length > 0;
+    const hasUrls = imageUrls && imageUrls.length > 0;
+
+    // Enforce Mutual Exclusivity
+    if (hasFiles && hasUrls) {
+      return apiResponse(res, {
+        success: false,
+        statusCode: 400,
+        message: 'Please provide either image files OR image URLs, not both.',
+      });
+    }
+
+    if (hasFiles) {
+      images = (req.files as Express.Multer.File[]).map(file => `/uploads/${file.filename}`);
+    } else if (hasUrls) {
+      images = imageUrls;
+    } else {
+      // Optional: Enforce at least one image source if required by business logic, 
+      // though schema validation might not enforce it, controller logic often does.
+      // Given prompt "If files exist... Else if image URLs... Else return validation error"
+      return apiResponse(res, {
+        success: false,
+        statusCode: 400,
+        message: 'Please provide product images (either uploaded files or URLs).',
+      });
+    }
 
     const product = await Product.create({
       name,
@@ -145,9 +173,24 @@ export const updateProduct = async (req: CustomRequest, res: Response) => {
 
     const { name, description, originalPrice, price, category, fabric, color, stock, isBestSeller, isNewArrival } = req.body;
     let images: string[] = product.images;
+    let imageUrls: string[] = req.body.images;
 
-    if (req.files && (req.files as Express.Multer.File[]).length > 0) {
+    const hasFiles = req.files && (req.files as Express.Multer.File[]).length > 0;
+    const hasUrls = imageUrls && imageUrls.length > 0;
+
+    // Enforce Mutual Exclusivity
+    if (hasFiles && hasUrls) {
+      return apiResponse(res, {
+        success: false,
+        statusCode: 400,
+        message: 'Please provide either image files OR image URLs, not both.',
+      });
+    }
+
+    if (hasFiles) {
       images = (req.files as Express.Multer.File[]).map(file => `/uploads/${file.filename}`);
+    } else if (hasUrls) {
+      images = imageUrls;
     }
 
     const updatedProduct = {
