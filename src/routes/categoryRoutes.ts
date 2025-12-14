@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   createCategory,
   getCategories,
+  getCategoryById,
   updateCategory,
   deleteCategory,
 } from '../controllers/categoryController';
@@ -18,6 +19,7 @@ router
 
 router
   .route('/:id')
+  .get(getCategoryById)
   .put(protect, authorize('admin'), validate(updateCategorySchema), updateCategory)
   .delete(protect, authorize('admin'), deleteCategory);
 

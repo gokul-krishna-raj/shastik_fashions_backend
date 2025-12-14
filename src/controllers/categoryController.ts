@@ -56,6 +56,37 @@ export const getCategories = async (req: Request, res: Response) => {
   }
 };
 
+// @desc    Get single category by ID
+// @route   GET /api/categories/:id
+// @access  Public
+export const getCategoryById = async (req: Request, res: Response) => {
+  try {
+    const category = await Category.findById(req.params.id);
+
+    if (!category) {
+      return apiResponse(res, {
+        success: false,
+        statusCode: 404,
+        message: 'Category not found',
+      });
+    }
+
+    apiResponse(res, {
+      statusCode: 200,
+      data: category,
+      message: 'Category fetched successfully',
+    });
+  } catch (error: any) {
+    console.error(error.message);
+    apiResponse(res, {
+      success: false,
+      statusCode: 500,
+      message: 'Server Error',
+      stack: error.stack,
+    });
+  }
+};
+
 // @desc    Update category
 // @route   PUT /api/categories/:id
 // @access  Private/Admin
