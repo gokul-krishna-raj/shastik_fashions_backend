@@ -27,3 +27,14 @@ export const updateProductSchema = Joi.object({
   isBestSeller: Joi.boolean().optional(),
   isNewArrival: Joi.boolean().optional(),
 });
+
+export const getProductsQuerySchema = Joi.object({
+  page: Joi.number().integer().min(1).optional(),
+  limit: Joi.number().integer().min(1).max(100).optional(),
+  category: Joi.string().optional(),
+  categorySlug: Joi.string().optional(),
+  search: Joi.string().optional(),
+  colors: Joi.string().optional(), // Comma-separated values
+  fabrics: Joi.string().optional(), // Comma-separated values
+  sortBy: Joi.string().valid('newest', 'oldest', 'price_low', 'price_high', 'best_sellers').optional(),
+});

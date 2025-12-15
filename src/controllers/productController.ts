@@ -70,14 +70,25 @@ export const createProduct = async (req: CustomRequest, res: Response) => {
   }
 };
 
-// @desc    Get all products
+// @desc    Get all products with filtering and sorting
 // @route   GET /api/products
 // @access  Public
 export const getProducts = async (req: Request, res: Response) => {
   try {
-    const { page = 1, limit = 10, category, categorySlug, search } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      category,
+      categorySlug,
+      search,
+      colors,
+      fabrics,
+      sortBy
+    } = req.query;
+
     const query: any = {};
 
+    // Category filtering
     if (category) {
       query.category = category;
     } else if (categorySlug) {
@@ -98,11 +109,55 @@ export const getProducts = async (req: Request, res: Response) => {
       }
     }
 
+    // Search filtering
     if (search) {
       query.name = { $regex: search, $options: 'i' };
     }
 
-    const paginatedResult = await paginate(Product, query, Number(page), Number(limit), 'category');
+    // Color filtering (supports multiple colors)
+    if (colors) {
+      const colorArray = (colors as string).split(',').map(c => c.trim());
+      query.color = { $in: colorArray };
+    }
+
+    // Fabric filtering (supports multiple fabrics)
+    if (fabrics) {
+      const fabricArray = (fabrics as string).split(',').map(f => f.trim());
+      query.fabric = { $in: fabricArray };
+    }
+
+    // Sorting options
+    let sortOptions: any = {};
+    if (sortBy) {
+      switch (sortBy) {
+        case 'newest':
+          sortOptions = { createdAt: -1 };
+          break;
+        case 'oldest':
+          sortOptions = { createdAt: 1 };
+          break;
+        case 'price_low':
+          sortOptions = { price: 1 };
+          break;
+        case 'price_high':
+          sortOptions = { price: -1 };
+          break;
+        case 'best_sellers':
+          sortOptions = { isBestSeller: -1 };
+          break;
+        default:
+          sortOptions = {};
+      }
+    }
+
+    const paginatedResult = await paginate(
+      Product,
+      query,
+      Number(page),
+      Number(limit),
+      'category',
+      sortOptions
+    );
 
     apiResponse(res, {
       statusCode: 200,

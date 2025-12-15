@@ -10,15 +10,16 @@ import {
 } from '../controllers/productController';
 import { protect, authorize } from '../middleware/authMiddleware';
 import upload from '../config/multer';
-import validate from '../middleware/validationMiddleware'; // Import validate
-import { createProductSchema, updateProductSchema } from '../validation/productValidation'; // Import schemas
+import validate, { validateQuery } from '../middleware/validationMiddleware'; // Import validate and validateQuery
+import { createProductSchema, updateProductSchema, getProductsQuerySchema } from '../validation/productValidation'; // Import schemas
 
 const router = Router();
 
 router
   .route('/')
   .post(protect, authorize('admin'), upload, validate(createProductSchema), createProduct)
-  .get(getProducts);
+  .get(validateQuery(getProductsQuerySchema), getProducts);
+
 
 router
   .route('/best-sellers')
