@@ -150,3 +150,54 @@ npm start
 -   Add more advanced filtering and sorting options for products and orders.
 -   Implement user profile management APIs.
 -   Set up CI/CD pipelines for automated deployments.
+
+## AWS Lambda Deployment (Serverless Framework)
+
+This project is compatible with AWS Lambda using the Serverless Framework. The repository already includes `src/lambda.ts`, a `serverless.yml` example, and a small change to reuse the Mongoose connection across invocations.
+
+Notes and important caveats:
+- The app uses `src/lambda.ts` as the exported Lambda handler (wraps the Express app with `serverless-http`).
+- `src/config/db.ts` now caches the Mongoose connection in `global._mongoose` to reduce cold-start overhead and connection churn.
+- For now uploads still use local `./uploads`. Lambda's local storage is ephemeral — files will not persist across invocations and are not recommended for production. You said you don't want S3 right now, so the current behavior remains unchanged; consider moving to S3 later.
+
+Quick deploy steps (Serverless Framework):
+
+1. Install Serverless CLI and optionally `serverless-offline` for local testing:
+
+```bash
+npm i -g serverless
+npm i --save-dev serverless-offline
+```
+
+2. Configure AWS credentials (usual `aws configure` or environment variables).
+
+3. Build and deploy locally or to dev stage:
+
+```bash
+npm run build
+npx serverless deploy --stage dev
+```
+
+4. Local testing with offline plugin:
+
+```bash
+npx serverless offline
+```
+
+CI/CD (GitHub Actions):
+
+- A workflow is included at `.github/workflows/deploy.yml` that runs on pushes to `main` and `dev`, builds the project, and runs `serverless deploy --stage dev`.
+- Required GitHub repository secrets (set these in the repo Settings → Secrets):
+  - `AWS_ACCESS_KEY_ID`
+  - `AWS_SECRET_ACCESS_KEY`
+  - `AWS_REGION` (optional, defaults to `us-east-1`)
+  - `MONGO_URI`
+  - `JWT_SECRET`
+  - `RAZORPAY_KEY_ID`
+  - `RAZORPAY_KEY_SECRET`
+  - `NPM_TOKEN` (optional, only if installing private npm packages)
+
+If you'd like, I can:
+- Run a local test using `serverless offline` in your environment,
+- Or help you set up the repository secrets and trigger a test deploy to `dev` from this repo.
+

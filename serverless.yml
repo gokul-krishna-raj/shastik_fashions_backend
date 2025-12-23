@@ -1,0 +1,27 @@
+service: shastik-fashion-backend
+frameworkVersion: '3'
+useDotenv: true
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  environment:
+    MONGO_URI: ${env:MONGO_URI}
+    JWT_SECRET: ${env:JWT_SECRET}
+    RAZORPAY_KEY_ID: ${env:RAZORPAY_KEY_ID}
+    RAZORPAY_KEY_SECRET: ${env:RAZORPAY_KEY_SECRET}
+functions:
+  api:
+    handler: dist/lambda.handler
+    events:
+      - httpApi: '*'
+package:
+  include:
+    - dist/**
+    - node_modules/**
+  exclude:
+    - src/**
+    - tests/**
+    - .github/**
+    - .vscode/**
+    - README.md

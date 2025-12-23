@@ -57,8 +57,11 @@ app.get('/', (req: Request, res: Response) => {
 // Error handling middleware
 app.use(errorHandler);
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
+// Only listen when running as a standalone server, not when deployed to Lambda
+if (!process.env.AWS_LAMBDA_FUNCTION_NAME) {
+  app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+  });
+}
 
 export default app;

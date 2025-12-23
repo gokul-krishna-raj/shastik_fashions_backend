@@ -70,13 +70,13 @@ UserSchema.methods.comparePassword = async function (candidatePassword: string) 
 
 UserSchema.methods.generateAuthToken = function () {
   return jwt.sign({ id: this._id }, process.env.JWT_SECRET as string, {
-    expiresIn: process.env.JWT_EXPIRE as string,
+    expiresIn: process.env.JWT_EXPIRE as any,
   });
 };
 
 UserSchema.methods.generateRefreshToken = function () {
   return jwt.sign({ id: this._id }, process.env.REFRESH_TOKEN_SECRET as string, {
-    expiresIn: process.env.REFRESH_TOKEN_EXPIRE as string,
+    expiresIn: process.env.REFRESH_TOKEN_EXPIRE as any,
   });
 };
 

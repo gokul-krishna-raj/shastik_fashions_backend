@@ -50,6 +50,7 @@ const paginate = async <T extends Document>(
     count: data.length,
     page,
     pages: totalPages,
+    totalPages, // Add missing property
     limit,
   };
 };

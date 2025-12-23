@@ -4,7 +4,11 @@ import { Request } from 'express';
 
 // Set storage engine
 const storage = multer.diskStorage({
-  destination: './uploads/',
+  destination: (req, file, cb) => {
+    const isLambda = !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+    const uploadPath = isLambda ? '/tmp/' : './uploads/';
+    cb(null, uploadPath);
+  },
   filename: function (req: Request, file: Express.Multer.File, cb: (error: (Error | null), filename: string) => void) {
     cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
   },
