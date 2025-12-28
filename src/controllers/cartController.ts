@@ -122,3 +122,50 @@ export const removeCartItem = async (req: CustomRequest, res: Response) => {
     });
   }
 };
+
+// @desc    Clear cart (user's cart or all carts if admin)
+// @route   DELETE /api/cart
+// @access  Private (admin can clear all)
+export const clearCart = async (req: CustomRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return apiResponse(res, {
+        success: false,
+        statusCode: 401,
+        message: 'Not authorized',
+      });
+    }
+
+    let result;
+
+    // Admin can delete all cart items
+    if (req.user?.role === 'admin') {
+      result = await Cart.deleteMany({});
+      apiResponse(res, {
+        statusCode: 200,
+        data: { deletedCount: result.deletedCount ?? 0 },
+        message: 'All cart items deleted successfully',
+      });
+      return;
+    }
+
+    // Regular user: delete only their cart items
+    result = await Cart.deleteMany({ user: userId });
+
+    apiResponse(res, {
+      statusCode: 200,
+      data: { deletedCount: result.deletedCount ?? 0 },
+      message: 'Your cart cleared successfully',
+    });
+  } catch (error: any) {
+    console.error(error.message);
+    apiResponse(res, {
+      success: false,
+      statusCode: 500,
+      message: 'Server Error',
+      stack: error.stack,
+    });
+  }
+};

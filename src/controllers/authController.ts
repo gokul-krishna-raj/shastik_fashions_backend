@@ -173,3 +173,34 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
     });
   }
 };
+
+// @desc    Check if authenticated user is admin
+// @route   GET /api/auth/check-admin
+// @access  Private
+export const checkAdminRole = async (req: CustomRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return apiResponse(res, {
+        success: false,
+        statusCode: 401,
+        message: 'Not authenticated',
+      });
+    }
+
+    const isAdmin = req.user.role === 'admin';
+
+    apiResponse(res, {
+      statusCode: 200,
+      data: { isAdmin },
+      message: 'Admin status fetched successfully',
+    });
+  } catch (error: any) {
+    console.error('Error checking admin role:', error.message);
+    apiResponse(res, {
+      success: false,
+      statusCode: 500,
+      message: 'Server Error',
+      stack: error.stack,
+    });
+  }
+};

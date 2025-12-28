@@ -165,7 +165,7 @@ export const getAllOrders = async (req: CustomRequest, res: Response) => {
       query,
       Number(page),
       Number(limit),
-      ['user', 'products.product'],
+      ['user', 'products.product', 'shippingAddress'],
       sort as string
     );
 
@@ -241,9 +241,10 @@ export const getUserOrders = async (req: CustomRequest, res: Response) => {
 // @access  Private/Admin
 export const updateOrderStatus = async (req: CustomRequest, res: Response) => {
   try {
-    const { orderStatus } = req.body;
+    const { status } = req.body;
+console.log("req.params =>", req.params.orderId);
 
-    let order = await Order.findById(req.params.id);
+    let order = await Order.findById(req.params.orderId);
 
     if (!order) {
       return apiResponse(res, {
@@ -253,7 +254,7 @@ export const updateOrderStatus = async (req: CustomRequest, res: Response) => {
       });
     }
 
-    order.orderStatus = orderStatus;
+    order.orderStatus = status;
     await order.save();
 
     apiResponse(res, {

@@ -115,3 +115,50 @@ export const removeWishlistItem = async (req: CustomRequest, res: Response) => {
     });
   }
 };
+
+// @desc    Clear wishlist (user's wishlist or all wishlists if admin)
+// @route   DELETE /api/wishlist
+// @access  Private (admin can clear all)
+export const clearWishlist = async (req: CustomRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return apiResponse(res, {
+        success: false,
+        statusCode: 401,
+        message: 'Not authorized',
+      });
+    }
+
+    let result;
+
+    // Admin can delete all wishlist items
+    if (req.user?.role === 'admin') {
+      result = await Wishlist.deleteMany({});
+      apiResponse(res, {
+        statusCode: 200,
+        data: { deletedCount: result.deletedCount ?? 0 },
+        message: 'All wishlist items deleted successfully',
+      });
+      return;
+    }
+
+    // Regular user: delete only their wishlist items
+    result = await Wishlist.deleteMany({ user: userId });
+
+    apiResponse(res, {
+      statusCode: 200,
+      data: { deletedCount: result.deletedCount ?? 0 },
+      message: 'Your wishlist cleared successfully',
+    });
+  } catch (error: any) {
+    console.error(error.message);
+    apiResponse(res, {
+      success: false,
+      statusCode: 500,
+      message: 'Server Error',
+      stack: error.stack,
+    });
+  }
+};

@@ -4,6 +4,7 @@ import Category from '../models/Category'; // Import Category model
 import { CustomRequest } from '../middleware/authMiddleware';
 import apiResponse from '../utils/apiResponse'; // Import apiResponse
 import paginate from '../utils/pagination'; // Import paginate
+import transformProduct from '../utils/productResponse'; // Add transformer for consistent API shape
 
 // @desc    Create new product
 // @route   POST /api/products
@@ -56,7 +57,7 @@ export const createProduct = async (req: CustomRequest, res: Response) => {
 
     apiResponse(res, {
       statusCode: 201,
-      data: product,
+      data: transformProduct(product),
       message: 'Product created successfully',
     });
   } catch (error: any) {
@@ -161,7 +162,7 @@ export const getProducts = async (req: Request, res: Response) => {
 
     apiResponse(res, {
       statusCode: 200,
-      data: paginatedResult.data,
+      data: paginatedResult.data.map((p: any) => transformProduct(p)),
       count: paginatedResult.count,
       page: paginatedResult.page,
       pages: paginatedResult.pages,
@@ -197,7 +198,7 @@ export const getProductById = async (req: Request, res: Response) => {
 
     apiResponse(res, {
       statusCode: 200,
-      data: product,
+      data: transformProduct(product),
       message: 'Product fetched successfully',
     });
   } catch (error: any) {
@@ -269,7 +270,7 @@ export const updateProduct = async (req: CustomRequest, res: Response) => {
 
     apiResponse(res, {
       statusCode: 200,
-      data: product,
+      data: transformProduct(product),
       message: 'Product updated successfully',
     });
   } catch (error: any) {
@@ -326,7 +327,7 @@ export const getBestSellers = async (req: Request, res: Response) => {
     const result = await paginate(Product, query, Number(page), Number(limit), 'category');
     apiResponse(res, {
       statusCode: 200,
-      data: result.data,
+      data: result.data.map((p: any) => transformProduct(p)),
       count: result.count,
       page: result.page,
       pages: result.totalPages,
@@ -354,7 +355,7 @@ export const getNewArrivals = async (req: Request, res: Response) => {
 
     apiResponse(res, {
       statusCode: 200,
-      data: result.data,
+      data: result.data.map((p: any) => transformProduct(p)),
       count: result.count,
       page: result.page,
       pages: result.totalPages,

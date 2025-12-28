@@ -2,16 +2,26 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IProduct extends Document {
   name: string;
+  slug?: string;
   description: string;
   originalPrice: number;
   price: number; // sales price
   category: mongoose.Schema.Types.ObjectId;
   images: string[];
+  imageUrl?: string;
   fabric: string;
-  color: string;
+  color?: string; // legacy single color
+  colors?: string[];
+  colorImages?: Record<string, string> | Map<string, string>;
+  sizes?: string[];
   stock: number;
+  inStock?: boolean;
   isBestSeller: boolean;
   isNewArrival: boolean;
+  featured?: boolean;
+  bestseller?: boolean;
+  rating?: number;
+  reviewCount?: number;
 }
 
 const ProductSchema: Schema = new Schema(
@@ -46,26 +56,62 @@ const ProductSchema: Schema = new Schema(
       type: [String],
       default: [],
     },
+    imageUrl: {
+      type: String,
+    },
     fabric: {
       type: String,
       required: [true, 'Please add fabric type'],
     },
+    // legacy single color (kept for backward compatibility)
     color: {
       type: String,
-      required: [true, 'Please add color'],
+    },
+    // preferred: array of colors
+    colors: {
+      type: [String],
+      default: [],
+    },
+    // map of color -> image url
+    colorImages: {
+      type: Schema.Types.Mixed,
+      default: {},
+    },
+    sizes: {
+      type: [String],
+      default: [],
     },
     stock: {
       type: Number,
       required: [true, 'Please add stock quantity'],
       min: [0, 'Stock cannot be negative'],
     },
+    inStock: {
+      type: Boolean,
+    },
     isBestSeller: {
+      type: Boolean,
+      default: false,
+    },
+    bestseller: {
       type: Boolean,
       default: false,
     },
     isNewArrival: {
       type: Boolean,
       default: true,
+    },
+    featured: {
+      type: Boolean,
+      default: false,
+    },
+    rating: {
+      type: Number,
+      default: 0,
+    },
+    reviewCount: {
+      type: Number,
+      default: 0,
     },
   },
   {
