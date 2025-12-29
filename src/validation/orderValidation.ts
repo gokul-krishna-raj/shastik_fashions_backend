@@ -29,15 +29,65 @@ export const updateOrderStatusSchema = Joi.object({
 
 // ✅ confirmOrderSchema
 export const confirmOrderSchema = Joi.object({
-  razorpayOrderId: Joi.string().required(),
-  razorpayPaymentId: Joi.string().required(),
-  razorpaySignature: Joi.string().required(),
-  products: Joi.array().items(
-    Joi.object({
-      product: Joi.string().required(),
-      quantity: Joi.number().required(),
-    })
-  ).required(),
-  shippingAddress: Joi.string().required(),
-  totalAmount: Joi.number().required(),
+  paymentMethod: Joi.string()
+    .valid('Razorpay', 'COD')
+    .required(),
+
+  paymentStatus: Joi.when('paymentMethod', {
+    is: 'COD',
+    then: Joi.string().valid('pending').required(),
+    otherwise: Joi.string().valid('paid').required(),
+  }),
+
+  razorpayOrderId: Joi.when('paymentMethod', {
+    is: 'Razorpay',
+    then: Joi.string().required(),
+    otherwise: Joi.forbidden(),
+  }),
+
+  razorpayPaymentId: Joi.when('paymentMethod', {
+    is: 'Razorpay',
+    then: Joi.string().required(),
+    otherwise: Joi.forbidden(),
+  }),
+
+  razorpaySignature: Joi.when('paymentMethod', {
+    is: 'Razorpay',
+    then: Joi.string().required(),
+    otherwise: Joi.forbidden(),
+  }),
+
+  products: Joi.array()
+    .items(
+      Joi.object({
+        product: Joi.string().required(),
+
+        quantity: Joi.number()
+          .integer()
+          .min(1)
+          .required(),
+
+        variant: Joi.object({
+          color: Joi.string().required().messages({
+            'any.required': 'Variant color is required',
+          }),
+          image: Joi.string().uri().optional(),
+        }).optional(), // 👈 variant optional for non-variant products
+      })
+    )
+    .min(1)
+    .required(),
+
+  shippingAddress: Joi.object({
+    fullName: Joi.string().required(),
+    phone: Joi.string().required(),
+    email: Joi.string().email().required(),
+    addressLine1: Joi.string().required(),
+    city: Joi.string().required(),
+    state: Joi.string().required(),
+    pincode: Joi.string().required(),
+    country: Joi.string().required(),
+  }).required(),
+
+  totalAmount: Joi.number().positive().required(),
 });

@@ -22,8 +22,15 @@ export interface IProduct extends Document {
   bestseller?: boolean;
   rating?: number;
   reviewCount?: number;
+  variants?: any[];
 }
-
+export interface IVariant {
+  color: string;
+  image?: string;
+  price?: number;
+  stock?: number;
+  [key: string]: any;
+}
 const ProductSchema: Schema = new Schema(
   {
     name: {
@@ -76,6 +83,17 @@ const ProductSchema: Schema = new Schema(
     colorImages: {
       type: Schema.Types.Mixed,
       default: {},
+    },
+    // variant support: per-color stock and image
+    variants: {
+      type: [
+        {
+          color: { type: String, required: true },
+          stock: { type: Number, default: 0 },
+          image: { type: String },
+        },
+      ],
+      default: [],
     },
     sizes: {
       type: [String],

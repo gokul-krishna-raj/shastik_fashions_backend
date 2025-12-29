@@ -5,6 +5,10 @@ export interface IOrder extends Document {
   products: {
     product: mongoose.Schema.Types.ObjectId;
     quantity: number;
+    variant?: {
+      color: string;
+      image?: string;
+    };
   }[];
   shippingAddress: string;
   totalAmount: number;
@@ -35,9 +39,23 @@ const OrderSchema: Schema = new Schema(
           required: true,
           min: [1, 'Quantity can not be less than 1'],
         },
+        variant: {
+          color: { type: String },
+          image: { type: String },
+        },
       },
     ],
-    shippingAddress: { type: mongoose.Schema.Types.ObjectId, ref: 'Address' },
+    shippingAddress: {
+      fullName: { type: String, required: true },
+      phone: { type: String, required: true },
+      email: { type: String, required: true },
+      addressLine1: { type: String, required: true },
+      city: { type: String, required: true },
+      state: { type: String, required: true },
+      pincode: { type: String, required: true },
+      country: { type: String, required: true },
+    },
+    // shippingAddress: { type: mongoose.Schema.Types.ObjectId, ref: 'Address' },
     totalAmount: {
       type: Number,
       required: true,
@@ -46,6 +64,11 @@ const OrderSchema: Schema = new Schema(
       type: String,
       enum: ['pending', 'paid', 'failed'],
       default: 'pending',
+    },
+    paymentMethod: {
+      type: String,
+      enum: ['Razorpay', 'COD'],
+      required: true,
     },
     orderStatus: {
       type: String,

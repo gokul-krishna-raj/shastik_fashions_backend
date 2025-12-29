@@ -146,7 +146,7 @@ export const verifyRazorpayPayment = async (req: CustomRequest, res: Response) =
 
 export const createRazorpayOrderV2 = async (req: CustomRequest, res: Response) => {
   try {
-    const { amount, products, receipt, notes } = req.body;
+    const { amount, products, receipt, notes,paymentMethod,shippingAddress } = req.body;
     const userId = req.user?.id;
 
     if (!userId) {
@@ -156,7 +156,18 @@ export const createRazorpayOrderV2 = async (req: CustomRequest, res: Response) =
         message: 'Not authorized',
       });
     }
+   // normalize products to satisfy Order model (ensure `product` field exists)
+    const productsToSave = (products || []).map((p: any) => ({
+      product: p.productId || p.product,
+      name: p.name,
+      price: p.price,
+      quantity: p.quantity,
+      variant: p.variant,
+    }));
 
+    if (productsToSave.some((p: any) => !p.product)) {
+      return apiResponse(res, { success: false, statusCode: 400, message: 'Each product must include productId or product' });
+    }
     const options: any = {
       amount: amount * 100, // amount in smallest currency unit
       currency: 'INR',
@@ -169,10 +180,12 @@ export const createRazorpayOrderV2 = async (req: CustomRequest, res: Response) =
 
     const order = await Order.create({
       user: userId,
-      products,
+      products: productsToSave,
       totalAmount: amount,
       razorpayOrderId: razorpayOrder.id,
       paymentStatus: 'pending',
+      paymentMethod: paymentMethod || 'Razorpay',
+      shippingAddress: shippingAddress || {},
     });
     console.log("order =>", order);
     console.log("razorpayOrder =>", razorpayOrder);

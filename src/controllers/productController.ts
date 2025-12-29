@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import Product from '../models/Product';
+import Product, { IProduct, IVariant } from '../models/Product';
 import Category from '../models/Category'; // Import Category model
 import { CustomRequest } from '../middleware/authMiddleware';
 import apiResponse from '../utils/apiResponse'; // Import apiResponse
@@ -35,8 +35,25 @@ export const createProduct = async (req: CustomRequest, res: Response) => {
       image_url,
       rating,
       review_count,
+      variants
     } = req.body;
-
+// Normalize/construct variants
+    let variantsToSave: IVariant[] | undefined;
+    if (Array.isArray(variants) && variants.length > 0) {
+      variantsToSave = variants.map((v: any) => ({
+        color: v.color,
+        image: v.image ?? v.imageUrl ?? (v.color ? color_images?.[v.color] : undefined),
+        price: v.price ?? price,
+        stock: v.stock ?? stock ?? 0,
+      }));
+    } else if (Array.isArray(colors) && color_images && Object.keys(color_images).length > 0) {
+      variantsToSave = (colors as string[]).map((c) => ({
+        color: c,
+        image: color_images[c] ?? undefined,
+        price,
+        stock: stock ?? 0,
+      }));
+    }
     // images can be empty array — accept whichever is provided (files or URLs) but not both
     let images: string[] = [];
     let imageUrls: string[] = Array.isArray(req.body.images) ? req.body.images : [];
@@ -100,6 +117,7 @@ export const createProduct = async (req: CustomRequest, res: Response) => {
       bestseller,
       rating,
       reviewCount: review_count,
+      variants: variantsToSave,
     });
 
     apiResponse(res, {
@@ -298,7 +316,25 @@ export const updateProduct = async (req: CustomRequest, res: Response) => {
       image_url,
       rating,
       review_count,
+      variants
     } = req.body;
+    // Normalize/construct variants
+    let variantsToSave: IVariant[] | undefined;
+    if (Array.isArray(variants) && variants.length > 0) {
+      variantsToSave = variants.map((v: any) => ({
+        color: v.color,
+        image: v.image ?? v.imageUrl ?? (v.color ? color_images?.[v.color] : undefined),
+        price: v.price ?? price,
+        stock: v.stock ?? stock ?? 0,
+      }));
+    } else if (Array.isArray(colors) && color_images && Object.keys(color_images).length > 0) {
+      variantsToSave = (colors as string[]).map((c) => ({
+        color: c,
+        image: color_images[c] ?? undefined,
+        price,
+        stock: stock ?? 0,
+      }));
+    }
 
     let images: string[] = product.images || [];
     let imageUrls: string[] = Array.isArray(req.body.images) ? req.body.images : [];
@@ -361,6 +397,7 @@ export const updateProduct = async (req: CustomRequest, res: Response) => {
       bestseller,
       rating,
       reviewCount: review_count ?? product.reviewCount,
+      variants: variantsToSave,
     };
     // Remove undefined fields so we don't overwrite existing values with undefined
     Object.keys(updatedProduct).forEach(key => updatedProduct[key] === undefined && delete updatedProduct[key]);

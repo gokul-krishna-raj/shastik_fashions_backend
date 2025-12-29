@@ -12,7 +12,7 @@ import paginate from '../utils/pagination';
 // @route   POST /api/orders/confirm
 // @access  Private
 export const confirmOrder = async (req: CustomRequest, res: Response) => {
-  const { razorpayOrderId, razorpayPaymentId, razorpaySignature, products, shippingAddress, totalAmount } = req.body;
+  const { razorpayOrderId, razorpayPaymentId, razorpaySignature, products, shippingAddress, totalAmount,paymentMethod,paymentStatus } = req.body;
   const userId = req.user?.id;
 
   if (!userId) {
@@ -24,42 +24,134 @@ export const confirmOrder = async (req: CustomRequest, res: Response) => {
   }
 
   try {
-    const generated_signature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET!)
-      .update(razorpayOrderId + '|' + razorpayPaymentId)
-      .digest('hex');
+/* ----------------------------------
+       Razorpay verification (ONLY ONLINE)
+    ----------------------------------- */
+    if (paymentMethod === 'Razorpay') {
+      if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+        return apiResponse(res, {
+          success: false,
+          statusCode: 400,
+          message: 'Missing Razorpay payment details',
+        });
+      }
 
-    if (generated_signature !== razorpaySignature) {
-      return apiResponse(res, {
-        success: false,
-        statusCode: 400,
-        message: 'Invalid Razorpay signature',
-      });
+      const generated_signature = crypto
+        .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET!)
+        .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+        .digest('hex');
+
+      if (generated_signature !== razorpaySignature) {
+        return apiResponse(res, {
+          success: false,
+          statusCode: 400,
+          message: 'Invalid Razorpay signature',
+        });
+      }
     }
 
     const estimatedDelivery = new Date();
     estimatedDelivery.setDate(estimatedDelivery.getDate() + 7);
 
     // Create a new order
-    const order = await Order.create({
+    // const order = await Order.create({
+    //   user: userId,
+    //   products,
+    //   shippingAddress,
+    //   totalAmount,
+    //   paymentMethod: 'Razorpay',
+    //   paymentStatus: 'paid',
+    //   razorpayOrderId,
+    //   razorpayPaymentId,
+    //   razorpaySignature,
+    //   orderStatus: 'processing',
+    //   estimatedDelivery,
+    // });
+
+    // Validate availability and reduce stock per variant (or global stock if variants not present)
+    // First, verify all items have required variant.color and sufficient stock
+    for (const item of products) {
+      const productDoc: any = await Product.findById(item.product);
+      if (!productDoc) {
+        return apiResponse(res, {
+          success: false,
+          statusCode: 404,
+          message: `Product ${item.product} not found`,
+        });
+      }
+
+      // Validate variant
+      const variantColor = item.variant?.color;
+      if (!variantColor) {
+        return apiResponse(res, {
+          success: false,
+          statusCode: 400,
+          message: 'Variant color is required for each product',
+        });
+      }
+
+      const hasVariants = Array.isArray(productDoc.variants) && productDoc.variants.length > 0;
+      if (hasVariants) {
+        const variant = productDoc.variants.find((v: any) => String(v.color).toLowerCase() === String(variantColor).toLowerCase());
+        if (!variant) {
+          return apiResponse(res, {
+            success: false,
+            statusCode: 400,
+            message: `Selected color ${variantColor} not available for product ${item.product}`,
+          });
+        }
+        if (variant.stock < item.quantity) {
+          return apiResponse(res, {
+            success: false,
+            statusCode: 400,
+            message: `Insufficient stock for color ${variantColor} of product ${item.product}`,
+          });
+        }
+      } else {
+        // Use global stock
+        if (typeof productDoc.stock !== 'number' || productDoc.stock < item.quantity) {
+          return apiResponse(res, {
+            success: false,
+            statusCode: 400,
+            message: `Insufficient global stock for product ${item.product}`,
+          });
+        }
+      }
+    }
+
+    // All validations passed — create order and then deduct stock
+   
+      const order = await Order.create({
       user: userId,
       products,
       shippingAddress,
       totalAmount,
-      paymentMethod: 'Razorpay',
-      paymentStatus: 'paid',
-      razorpayOrderId,
-      razorpayPaymentId,
-      razorpaySignature,
+      paymentMethod,                      // COD / Razorpay
+      paymentStatus: paymentMethod === 'COD' ? 'pending' : 'paid',
+      razorpayOrderId: paymentMethod === 'Razorpay' ? razorpayOrderId : null,
+      razorpayPaymentId: paymentMethod === 'Razorpay' ? razorpayPaymentId : null,
+      razorpaySignature: paymentMethod === 'Razorpay' ? razorpaySignature : null,
       orderStatus: 'processing',
       estimatedDelivery,
     });
 
-    // Update product stock
+    // Deduct stock per item
     for (const item of products) {
-      await Product.findByIdAndUpdate(item.product, {
-        $inc: { stock: -item.quantity },
-      });
+      const productDoc: any = await Product.findById(item.product);
+      const variantColor = item.variant?.color;
+      const hasVariants = Array.isArray(productDoc.variants) && productDoc.variants.length > 0;
+      if (hasVariants) {
+        // decrement variant stock
+        await Product.updateOne(
+          { _id: item.product, 'variants.color': variantColor },
+          { $inc: { 'variants.$.stock': -item.quantity } }
+        );
+      } else {
+        // decrement global stock
+        await Product.findByIdAndUpdate(item.product, {
+          $inc: { stock: -item.quantity },
+        });
+      }
     }
 
     // Clear user's cart
