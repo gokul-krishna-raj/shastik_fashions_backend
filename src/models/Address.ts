@@ -1,4 +1,5 @@
 
+import { fa } from '@faker-js/faker/.';
 import { Schema, model, Document, Types } from 'mongoose';
 
 export interface IAddress extends Document {
@@ -32,7 +33,7 @@ const addressSchema = new Schema<IAddress>(
     },
     email: {
         type: String,
-        required: true,
+        required: false,
     },
     addressLine1: {
       type: String,

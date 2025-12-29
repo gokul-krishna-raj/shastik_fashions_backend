@@ -11,9 +11,35 @@ import transformProduct from '../utils/productResponse'; // Add transformer for 
 // @access  Private/Admin
 export const createProduct = async (req: CustomRequest, res: Response) => {
   try {
-    const { name, description, originalPrice, price, category, fabric, color, stock, isBestSeller, isNewArrival } = req.body;
+    const {
+      name,
+      description,
+      originalPrice,
+      original_price,
+      price,
+      category,
+      category_id,
+      fabric,
+      color,
+      colors,
+      color_images,
+      colorImages,
+      sizes,
+      stock,
+      in_stock,
+      isBestSeller,
+      isNewArrival,
+      featured,
+      bestseller,
+      imageUrl,
+      image_url,
+      rating,
+      review_count,
+    } = req.body;
+
+    // images can be empty array — accept whichever is provided (files or URLs) but not both
     let images: string[] = [];
-    let imageUrls: string[] = req.body.images;
+    let imageUrls: string[] = Array.isArray(req.body.images) ? req.body.images : [];
     const hasFiles = req.files && (req.files as Express.Multer.File[]).length > 0;
     const hasUrls = imageUrls && imageUrls.length > 0;
 
@@ -29,30 +55,51 @@ export const createProduct = async (req: CustomRequest, res: Response) => {
     if (hasFiles) {
       images = (req.files as Express.Multer.File[]).map(file => `/uploads/${file.filename}`);
     } else if (hasUrls) {
-      images = imageUrls;
+      images = imageUrls; // may be empty array which is allowed
     } else {
-      // Optional: Enforce at least one image source if required by business logic, 
-      // though schema validation might not enforce it, controller logic often does.
-      // Given prompt "If files exist... Else if image URLs... Else return validation error"
-      return apiResponse(res, {
-        success: false,
-        statusCode: 400,
-        message: 'Please provide product images (either uploaded files or URLs).',
-      });
+      images = []; // allow creating product without images in the payload
     }
+
+    // Merge colorImages into images (allowing color_images or colorImages), keep unique URLs and exclude color names
+    const colorImageObj: any = color_images || colorImages || {};
+    const extractImageUrls = (obj: any) => {
+      if (!obj || typeof obj !== 'object') return [] as string[];
+      return Object.values(obj)
+        .filter(Boolean)
+        .map((v: any) => String(v).trim())
+        .filter((v: string) => {
+          try {
+            const u = new URL(v);
+            return u.protocol === 'http:' || u.protocol === 'https:';
+          } catch (e) {
+            return /^data:image\//i.test(v);
+          }
+        });
+    };
+    const colorImageUrls: string[] = Array.isArray(colors) ? [] : extractImageUrls(colorImageObj);
+    images = Array.from(new Set([...images, ...colorImageUrls]));
 
     const product = await Product.create({
       name,
       description,
-      originalPrice,
+      originalPrice: originalPrice ?? original_price,
       price,
-      category,
+      category: category || category_id,
       images,
+      imageUrl: imageUrl || image_url || (images.length > 0 ? images[0] : undefined),
       fabric,
       color,
+      colors: Array.isArray(colors) ? colors : [],
+      colorImages: color_images || colorImages || {},
+      sizes: Array.isArray(sizes) ? sizes : [],
       stock,
+      inStock: typeof in_stock === 'boolean' ? in_stock : undefined,
       isBestSeller,
       isNewArrival,
+      featured,
+      bestseller,
+      rating,
+      reviewCount: review_count,
     });
 
     apiResponse(res, {
@@ -227,9 +274,34 @@ export const updateProduct = async (req: CustomRequest, res: Response) => {
       });
     }
 
-    const { name, description, originalPrice, price, category, fabric, color, stock, isBestSeller, isNewArrival } = req.body;
-    let images: string[] = product.images;
-    let imageUrls: string[] = req.body.images;
+    const {
+      name,
+      description,
+      originalPrice,
+      original_price,
+      price,
+      category,
+      category_id,
+      fabric,
+      color,
+      colors,
+      color_images,
+      colorImages,
+      sizes,
+      stock,
+      in_stock,
+      isBestSeller,
+      isNewArrival,
+      featured,
+      bestseller,
+      imageUrl,
+      image_url,
+      rating,
+      review_count,
+    } = req.body;
+
+    let images: string[] = product.images || [];
+    let imageUrls: string[] = Array.isArray(req.body.images) ? req.body.images : [];
 
     const hasFiles = req.files && (req.files as Express.Multer.File[]).length > 0;
     const hasUrls = imageUrls && imageUrls.length > 0;
@@ -246,22 +318,52 @@ export const updateProduct = async (req: CustomRequest, res: Response) => {
     if (hasFiles) {
       images = (req.files as Express.Multer.File[]).map(file => `/uploads/${file.filename}`);
     } else if (hasUrls) {
-      images = imageUrls;
+      images = imageUrls; // may be empty array which is allowed
     }
 
-    const updatedProduct = {
+    // Merge colorImages into images (allowing color_images or colorImages), keep unique URLs and exclude color names
+    const colorImageObj: any = color_images || colorImages || {};
+    const extractImageUrls = (obj: any) => {
+      if (!obj || typeof obj !== 'object') return [] as string[];
+      return Object.values(obj)
+        .filter(Boolean)
+        .map((v: any) => String(v).trim())
+        .filter((v: string) => {
+          try {
+            const u = new URL(v);
+            return u.protocol === 'http:' || u.protocol === 'https:';
+          } catch (e) {
+            return /^data:image\//i.test(v);
+          }
+        });
+    };
+    const colorImageUrls: string[] = Array.isArray(colors) ? extractImageUrls(colorImageObj) : [];
+    images = Array.from(new Set([...images, ...colorImageUrls]));
+
+    const updatedProduct: any = {
       name,
       description,
-      originalPrice,
+      originalPrice: originalPrice ?? original_price,
       price,
-      category,
+      category: category || category_id,
       images,
+      imageUrl: imageUrl || image_url || (images.length > 0 ? images[0] : undefined),
       fabric,
       color,
+      colors: Array.isArray(colors) ? colors : product.colors,
+      colorImages: color_images || colorImages || product.colorImages,
+      sizes: Array.isArray(sizes) ? sizes : product.sizes,
       stock,
+      inStock: typeof in_stock === 'boolean' ? in_stock : product.inStock,
       isBestSeller,
       isNewArrival,
+      featured,
+      bestseller,
+      rating,
+      reviewCount: review_count ?? product.reviewCount,
     };
+    // Remove undefined fields so we don't overwrite existing values with undefined
+    Object.keys(updatedProduct).forEach(key => updatedProduct[key] === undefined && delete updatedProduct[key]);
 
     product = await Product.findByIdAndUpdate(req.params.id, updatedProduct, {
       new: true,

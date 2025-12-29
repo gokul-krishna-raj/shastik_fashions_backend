@@ -16,6 +16,7 @@ router.use('/products', productRoutes);
 router.use('/cart', cartRoutes);
 router.use('/wishlist', wishlistRoutes);
 router.use('/payment', paymentRoutes);
+router.use('/payments', paymentRoutes);
 router.use('/orders', orderRoutes);
 router.use('/address', addressRoutes);
 router.use('/admin', adminRoutes);

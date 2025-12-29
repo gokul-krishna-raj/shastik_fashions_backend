@@ -42,8 +42,8 @@ export const createRazorpayOrder = async (req: CustomRequest, res: Response) => 
       razorpayOrderId: razorpayOrder.id,
       paymentStatus: 'pending',
     });
-console.log("order =>", order);
-console.log("razorpayOrder =>", razorpayOrder);
+    console.log("order =>", order);
+    console.log("razorpayOrder =>", razorpayOrder);
 
 
 
@@ -129,6 +129,149 @@ export const verifyRazorpayPayment = async (req: CustomRequest, res: Response) =
       apiResponse(res, {
         success: false,
         statusCode: 400,
+        message: 'Payment verification failed',
+      });
+    }
+  } catch (error: any) {
+    console.error(error.message);
+    apiResponse(res, {
+      success: false,
+      statusCode: 500,
+      message: 'Server Error',
+      stack: error.stack,
+    });
+  }
+};
+
+
+export const createRazorpayOrderV2 = async (req: CustomRequest, res: Response) => {
+  try {
+    const { amount, products, receipt, notes } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return apiResponse(res, {
+        success: false,
+        statusCode: 401,
+        message: 'Not authorized',
+      });
+    }
+
+    const options: any = {
+      amount: amount * 100, // amount in smallest currency unit
+      currency: 'INR',
+      receipt: receipt || `receipt_${Date.now()}`,
+      payment_capture: 1,
+      notes: notes || {},
+    };
+
+    const razorpayOrder = await razorpay.orders.create(options);
+
+    const order = await Order.create({
+      user: userId,
+      products,
+      totalAmount: amount,
+      razorpayOrderId: razorpayOrder.id,
+      paymentStatus: 'pending',
+    });
+    console.log("order =>", order);
+    console.log("razorpayOrder =>", razorpayOrder);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Razorpay order created successfully',
+      keyId: process.env.RAZORPAY_KEY_ID,
+      orderId: razorpayOrder.id,
+      amount: razorpayOrder.amount,
+      currency: razorpayOrder.currency,
+      receipt: razorpayOrder.receipt,
+      orderDbId: order._id,
+    });
+  } catch (error: any) {
+    console.error(error.message);
+    apiResponse(res, {
+      success: false,
+      statusCode: 500,
+      message: 'Server Error',
+      stack: error.stack,
+    });
+  }
+};
+
+// @desc    Verify Razorpay payment signature
+// @route   POST /api/payment/verify
+// @access  Private
+export const verifyRazorpayPaymentV2 = async (req: CustomRequest, res: Response) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, orderDbId, order_data } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return apiResponse(res, {
+        success: false,
+        statusCode: 401,
+        message: 'Not authorized',
+      });
+    }
+
+    const body = razorpay_order_id + '|' + razorpay_payment_id;
+    const expectedSignature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET as string)
+      .update(body.toString())
+      .digest('hex');
+
+    const isAuthentic = expectedSignature === razorpay_signature;
+
+    if (isAuthentic) {
+      // Try to find the order by provided DB id, by order_data or by razorpay order id
+      let order: any = null;
+      if (orderDbId) {
+        order = await Order.findById(orderDbId);
+      } else if (order_data && typeof order_data === 'object' && order_data.orderDbId) {
+        order = await Order.findById(order_data.orderDbId);
+      } else {
+        order = await Order.findOne({ razorpayOrderId: razorpay_order_id });
+      }
+
+      if (!order) {
+        return apiResponse(res, {
+          success: false,
+          statusCode: 404,
+          message: 'Order not found in DB',
+          data: { verified: false },
+        });
+      }
+
+      order.paymentStatus = 'paid';
+      order.razorpayPaymentId = razorpay_payment_id;
+      order.razorpaySignature = razorpay_signature;
+      await order.save();
+
+      apiResponse(res, {
+        statusCode: 200,
+        data: { verified: true },
+        message: 'Payment verified successfully',
+      });
+    } else {
+      // Try to mark failed for the order if possible
+      let order: any = null;
+      if (orderDbId) {
+        order = await Order.findById(orderDbId);
+      } else if (order_data && typeof order_data === 'object' && order_data.orderDbId) {
+        order = await Order.findById(order_data.orderDbId);
+      } else {
+        order = await Order.findOne({ razorpayOrderId: razorpay_order_id });
+      }
+
+      if (order) {
+        order.paymentStatus = 'failed';
+        await order.save();
+      }
+
+      apiResponse(res, {
+        success: false,
+        statusCode: 400,
+        data: { verified: false },
         message: 'Payment verification failed',
       });
     }

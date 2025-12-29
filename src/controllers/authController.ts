@@ -1,8 +1,18 @@
 import { Request, Response } from 'express';
 import User from '../models/User';
+import Address from '../models/Address';
 import { CustomRequest } from '../middleware/authMiddleware';
 import apiResponse from '../utils/apiResponse'; // Import apiResponse
 import jwt from 'jsonwebtoken';
+
+interface Profile {
+  name: string;
+  mobile: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+}
 
 const generateAccessAndRefreshTokens = async (user: any) => {
   const accessToken = user.generateAuthToken();
@@ -196,6 +206,138 @@ export const checkAdminRole = async (req: CustomRequest, res: Response) => {
     });
   } catch (error: any) {
     console.error('Error checking admin role:', error.message);
+    apiResponse(res, {
+      success: false,
+      statusCode: 500,
+      message: 'Server Error',
+      stack: error.stack,
+    });
+  }
+};
+
+// @desc    Get authenticated user's profile and default address
+// @route   GET /api/auth/profile
+// @access  Private
+export const getProfile = async (req: CustomRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return apiResponse(res, {
+        success: false,
+        statusCode: 401,
+        message: 'Not authenticated',
+      });
+    }
+
+    const userId = req.user.id;
+
+    const user = await User.findById(userId).select('-password -refreshToken');
+    if (!user) {
+      return apiResponse(res, {
+        success: false,
+        statusCode: 404,
+        message: 'User not found',
+      });
+    }
+
+    const address = await Address.findOne({ user: userId, isDefault: true });
+
+    const profile: Profile = {
+      name: user.name,
+      mobile: user.mobile,
+      address: address?.addressLine1 || '',
+      city: address?.city || '',
+      state: address?.state || '',
+      pincode: address?.pincode || '',
+    };
+
+    apiResponse(res, {
+      statusCode: 200,
+      data: profile,
+      message: 'Profile fetched successfully',
+    });
+  } catch (error: any) {
+    console.error('Error fetching profile:', error.message);
+    apiResponse(res, {
+      success: false,
+      statusCode: 500,
+      message: 'Server Error',
+      stack: error.stack,
+    });
+  }
+};
+
+// @desc    Update user profile and default address
+// @route   PUT /api/auth/profile
+// @access  Private
+export const updateProfile = async (req: CustomRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return apiResponse(res, {
+        success: false,
+        statusCode: 401,
+        message: 'Not authenticated',
+      });
+    }
+
+    const userId = req.user.id;
+    const { full_name, mobile, address, city, state, pincode } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return apiResponse(res, {
+        success: false,
+        statusCode: 404,
+        message: 'User not found',
+      });
+    }
+
+    // Update user fields
+    user.name = full_name || user.name;
+    user.mobile = mobile || user.mobile;
+    await user.save({ validateBeforeSave: false });
+
+    // Update or create default address
+    let addr = await Address.findOne({ user: userId, isDefault: true });
+
+    if (!addr) {
+      addr = await Address.create({
+        user: userId,
+        fullName: full_name,
+        phone: mobile,
+        email: user.email,
+        addressLine1: address,
+        city: city,
+        state: state,
+        pincode: pincode,
+        country: 'India',
+        isDefault: true,
+      });
+    } else {
+      addr.fullName = full_name || addr.fullName;
+      addr.phone = mobile || addr.phone;
+      addr.addressLine1 = address || addr.addressLine1;
+      addr.city = city || addr.city;
+      addr.state = state || addr.state;
+      addr.pincode = pincode || addr.pincode;
+      await addr.save();
+    }
+
+    const profile: Profile = {
+      name: user.name,
+      mobile: user.mobile,
+      address: addr?.addressLine1 || '',
+      city: addr?.city || '',
+      state: addr?.state || '',
+      pincode: addr?.pincode || '',
+    };
+
+    apiResponse(res, {
+      statusCode: 200,
+      data: profile,
+      message: 'Profile updated successfully',
+    });
+  } catch (error: any) {
+    console.error('Error updating profile:', error.message);
     apiResponse(res, {
       success: false,
       statusCode: 500,
