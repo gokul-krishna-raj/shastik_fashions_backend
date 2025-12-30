@@ -37,7 +37,7 @@ export const createProduct = async (req: CustomRequest, res: Response) => {
       review_count,
       variants
     } = req.body;
-// Normalize/construct variants
+    // Normalize/construct variants
     let variantsToSave: IVariant[] | undefined;
     if (Array.isArray(variants) && variants.length > 0) {
       variantsToSave = variants.map((v: any) => ({
@@ -93,7 +93,7 @@ export const createProduct = async (req: CustomRequest, res: Response) => {
           }
         });
     };
-    const colorImageUrls: string[] = Array.isArray(colors) ? [] : extractImageUrls(colorImageObj);
+    const colorImageUrls: string[] = Array.isArray(colors) ? extractImageUrls(colorImageObj) : [];
     images = Array.from(new Set([...images, ...colorImageUrls]));
 
     const product = await Product.create({
@@ -181,9 +181,13 @@ export const getProducts = async (req: Request, res: Response) => {
     }
 
     // Color filtering (supports multiple colors)
+    // if (colors) {
+    //   const colorArray = (colors as string).split(',').map(c => c.trim());
+    //   query.color = { $in: colorArray };
+    // }
     if (colors) {
       const colorArray = (colors as string).split(',').map(c => c.trim());
-      query.color = { $in: colorArray };
+      query.colors = { $in: [colors] };
     }
 
     // Fabric filtering (supports multiple fabrics)

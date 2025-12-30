@@ -61,7 +61,7 @@ export const registerUser = async (req: Request, res: Response) => {
         email: user.email,
         mobile: user.mobile,
         role: user.role,
-        token:accessToken,
+        token: accessToken,
         refreshToken,
       },
       message: 'User registered successfully',
@@ -117,7 +117,7 @@ export const loginUser = async (req: Request, res: Response) => {
         email: user.email,
         mobile: user.mobile,
         role: user.role,
-        token:accessToken,
+        token: accessToken,
         refreshToken,
       },
       message: 'User logged in successfully',
@@ -163,13 +163,16 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
       });
     }
 
-    const { accessToken, refreshToken: newRefreshToken } =
-      await generateAccessAndRefreshTokens(user);
+    // Generate new access token ONLY (disable rotation for stability)
+    const accessToken = user.generateAuthToken();
+
+    // Reuse existing refresh token
+    const newRefreshToken = refreshToken;
 
     apiResponse(res, {
       statusCode: 200,
       data: {
-        token:accessToken,
+        token: accessToken,
         refreshToken: newRefreshToken,
       },
       message: 'Access token refreshed successfully',

@@ -3,16 +3,18 @@ import crypto from 'crypto';
 import Order from '../models/Order';
 import Product from '../models/Product';
 import Cart from '../models/Cart';
+import User from '../models/User';
 import { CustomRequest } from '../middleware/authMiddleware';
 import apiResponse from '../utils/apiResponse';
 import { razorpay } from '../config/razorpay';
 import paginate from '../utils/pagination';
+import sendEmail from '../utils/sendEmail';
 
 // @desc    Confirm order and create new order
 // @route   POST /api/orders/confirm
 // @access  Private
 export const confirmOrder = async (req: CustomRequest, res: Response) => {
-  const { razorpayOrderId, razorpayPaymentId, razorpaySignature, products, shippingAddress, totalAmount,paymentMethod,paymentStatus } = req.body;
+  const { razorpayOrderId, razorpayPaymentId, razorpaySignature, products, shippingAddress, totalAmount, paymentMethod, paymentStatus } = req.body;
   const userId = req.user?.id;
 
   if (!userId) {
@@ -24,9 +26,9 @@ export const confirmOrder = async (req: CustomRequest, res: Response) => {
   }
 
   try {
-/* ----------------------------------
-       Razorpay verification (ONLY ONLINE)
-    ----------------------------------- */
+    /* ----------------------------------
+           Razorpay verification (ONLY ONLINE)
+        ----------------------------------- */
     if (paymentMethod === 'Razorpay') {
       if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
         return apiResponse(res, {
@@ -120,8 +122,8 @@ export const confirmOrder = async (req: CustomRequest, res: Response) => {
     }
 
     // All validations passed — create order and then deduct stock
-   
-      const order = await Order.create({
+
+    const order = await Order.create({
       user: userId,
       products,
       shippingAddress,
@@ -156,6 +158,77 @@ export const confirmOrder = async (req: CustomRequest, res: Response) => {
 
     // Clear user's cart
     await Cart.deleteMany({ user: userId });
+
+    // Send confirmation email
+    try {
+      const userDoc = await User.findById(userId);
+      if (userDoc) {
+        const orderDetails: any = await Order.findById(order._id)
+          .populate('products.product');
+
+        const productsHtml = orderDetails.products.map((item: any) => {
+          return `
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">${item.product.name} (${item.variant?.color || 'Standard'})</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${item.quantity}</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">₹${item.product.price}</td>
+            </tr>
+          `;
+        }).join('');
+
+        const html = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #333;">Order Confirmation</h1>
+            <p>Hi ${userDoc.name},</p>
+            <p>Thank you for your order! We have received it and are preparing it for shipment.</p>
+            
+            <div style="background-color: #f9f9f9; padding: 15px; margin: 20px 0; border-radius: 5px;">
+              <p><strong>Order ID:</strong> ${order._id}</p>
+              <p><strong>Total Amount:</strong> ₹${totalAmount}</p>
+              <p><strong>Payment Method:</strong> ${paymentMethod}</p>
+            </div>
+            
+            <h3>Order Details:</h3>
+            <table style="border-collapse: collapse; width: 100%; margin-bottom: 20px;">
+              <thead>
+                <tr style="background-color: #f2f2f2;">
+                  <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Product</th>
+                  <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Quantity</th>
+                  <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Price</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${productsHtml}
+              </tbody>
+            </table>
+            
+            <div style="border-top: 1px solid #eee; padding-top: 15px;">
+              <h3>Shipping Address:</h3>
+              <p>
+                ${orderDetails.shippingAddress.fullName}<br>
+                ${orderDetails.shippingAddress.addressLine1}<br>
+                ${orderDetails.shippingAddress.city}, ${orderDetails.shippingAddress.state} - ${orderDetails.shippingAddress.pincode}<br>
+                Phone: ${orderDetails.shippingAddress.phone}
+              </p>
+            </div>
+            
+            <p style="margin-top: 30px; font-size: 12px; color: #888;">
+              If you have any questions, please contact our support team.
+            </p>
+          </div>
+        `;
+
+        await sendEmail({
+          email: userDoc.email,
+          subject: `Order Confirmation - #${order._id}`,
+          message: `Thank you for your order! Order ID: ${order._id}`,
+          html
+        });
+      }
+    } catch (emailError) {
+      console.error('Email sending failed:', emailError);
+      // Don't fail the request if email fails
+    }
 
     apiResponse(res, {
       statusCode: 201,
@@ -215,10 +288,14 @@ export const getOrderById = async (req: CustomRequest, res: Response) => {
 // @access  Private/Admin
 export const getAllOrders = async (req: CustomRequest, res: Response) => {
   try {
-    const { page = 1, limit = 10, status, startDate, endDate, sort = '-createdAt', q, user } = req.query;
-
+    const { page = 1, limit = 10, status, startDate, endDate, sort = '-createdAt', q, user, sortOrder } = req.query;
+    let sortBy = sort;
     const query: any = {};
-
+    if (sortOrder === 'asc') {
+      sortBy = 'createdAt';
+    } else {
+      sortBy = '-createdAt';
+    }
     // Filter by order status
     if (status) {
       query.orderStatus = status;
@@ -258,7 +335,7 @@ export const getAllOrders = async (req: CustomRequest, res: Response) => {
       Number(page),
       Number(limit),
       ['user', 'products.product', 'shippingAddress'],
-      sort as string
+      sortBy as string
     );
 
 
@@ -334,7 +411,7 @@ export const getUserOrders = async (req: CustomRequest, res: Response) => {
 export const updateOrderStatus = async (req: CustomRequest, res: Response) => {
   try {
     const { status } = req.body;
-console.log("req.params =>", req.params.orderId);
+    console.log("req.params =>", req.params.orderId);
 
     let order = await Order.findById(req.params.orderId);
 
