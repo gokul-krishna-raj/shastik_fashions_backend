@@ -6,10 +6,20 @@ provider:
   runtime: nodejs18.x
   region: us-east-1
   environment:
+    PORT: ${env:PORT}
     MONGO_URI: ${env:MONGO_URI}
     JWT_SECRET: ${env:JWT_SECRET}
+    JWT_EXPIRE: ${env:JWT_EXPIRE}
+    REFRESH_TOKEN_SECRET: ${env:REFRESH_TOKEN_SECRET}
+    REFRESH_TOKEN_EXPIRE: ${env:REFRESH_TOKEN_EXPIRE}
     RAZORPAY_KEY_ID: ${env:RAZORPAY_KEY_ID}
     RAZORPAY_KEY_SECRET: ${env:RAZORPAY_KEY_SECRET}
+    SMTP_HOST: ${env:SMTP_HOST}
+    SMTP_PORT: ${env:SMTP_PORT}
+    SMTP_EMAIL: ${env:SMTP_EMAIL}
+    SMTP_PASSWORD: ${env:SMTP_PASSWORD}
+    FROM_EMAIL: ${env:FROM_EMAIL}
+    FROM_NAME: ${env:FROM_NAME}
 functions:
   api:
     handler: dist/lambda.handler
