@@ -3,6 +3,10 @@ import Joi from 'joi';
 import apiResponse from '../utils/apiResponse';
 
 const validate = (schema: Joi.ObjectSchema) => (req: Request, res: Response, next: NextFunction) => {
+  console.log(`Validating ${req.method} ${req.originalUrl}`);
+  console.log('Body:', JSON.stringify(req.body));
+  console.log('Headers:', JSON.stringify(req.headers));
+
   const { error } = schema.validate(req.body, {
     abortEarly: false, // Include all errors
     allowUnknown: true, // Allow unknown properties

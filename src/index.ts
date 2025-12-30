@@ -23,7 +23,13 @@ const port = process.env.PORT || 5000;
 
 // Security Middlewares
 app.use(helmet()); // Set security headers
-app.use(cors()); // Enable CORS
+app.use(cors({
+  origin: 'https://shastikfashion.vercel.app',
+  credentials: true,
+}));
+// app.options('*', cors());
+// app.use(options('*', cors()));
+// app.use(cors()); // Enable CORS
 
 // Rate limiting to prevent brute-force attacks
 const limiter = rateLimit({
@@ -38,6 +44,27 @@ app.use(express.urlencoded({ extended: true }));
 
 // Logger middleware
 app.use(logger);
+app.use((req, res, next) => {
+  if (typeof req.body === 'string') {
+    try {
+      req.body = JSON.parse(req.body);
+    } catch {
+      req.body = {};
+    }
+  }
+  console.log('Lambda Request Body type:', typeof req.body);
+  console.log('Lambda Request Body:', JSON.stringify(req.body));
+  next();
+});
+
+// app.use((req, res, next) => {
+//   if (process.env.AWS_LAMBDA_FUNCTION_NAME) {
+//     console.log('Lambda Request Path:', req.path);
+//     console.log('Lambda Request Body type:', typeof req.body);
+//     console.log('Lambda Request Body:', JSON.stringify(req.body));
+//   }
+//   next();
+// });
 
 // Serve static files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads'))); // Serve static files
@@ -48,8 +75,6 @@ const swaggerDocument = yaml.load(fs.readFileSync(path.resolve(__dirname, '../sw
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use('/api', routes);
-app.use('/api/auth', authRoutes); // Use authRoutes
-
 app.get('/', (req: Request, res: Response) => {
   res.send('Welcome to Shastik Fashion Backend');
 });
