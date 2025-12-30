@@ -190,7 +190,7 @@
                 "S3Bucket": {
                   "Ref": "ServerlessDeploymentBucket"
                 },
-                "S3Key": "serverless/shastik-fashion-backend/dev/1767096754197-2025-12-30T12:12:34.197Z/shastik-fashion-backend.zip"
+                "S3Key": "serverless/shastik-fashion-backend/dev/1767114481748-2025-12-30T17:08:01.748Z/shastik-fashion-backend.zip"
               },
               "Handler": "dist/lambda.handler",
               "Runtime": "nodejs18.x",
@@ -226,14 +226,14 @@
               "ApiLogGroup"
             ]
           },
-          "ApiLambdaVersionJeRz3bzmXzi3EdfurQvrZXSUWoIb8fLTzmxoVKGTG1M": {
+          "ApiLambdaVersionnHIge6jlB7WWq1lnBXbuv7SWnILlENXgx8uPKPmmDls": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "ApiLambdaFunction"
               },
-              "CodeSha256": "pU16QzpdQFO4BVvw04TxbcEmT1R5cRv75LDf8Gm0t5c="
+              "CodeSha256": "HEGDhCNGweECLJZ4rSs5pCiKvz2Sq4uxOOu6p3CRfNw="
             }
           },
           "HttpApi": {
@@ -341,7 +341,7 @@
           "ApiLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "ApiLambdaVersionJeRz3bzmXzi3EdfurQvrZXSUWoIb8fLTzmxoVKGTG1M"
+              "Ref": "ApiLambdaVersionnHIge6jlB7WWq1lnBXbuv7SWnILlENXgx8uPKPmmDls"
             },
             "Export": {
               "Name": "sls-shastik-fashion-backend-dev-ApiLambdaFunctionQualifiedArn"
@@ -483,7 +483,7 @@
         "timeout": 6,
         "runtime": "nodejs18.x",
         "vpc": {},
-        "versionLogicalId": "ApiLambdaVersionJeRz3bzmXzi3EdfurQvrZXSUWoIb8fLTzmxoVKGTG1M"
+        "versionLogicalId": "ApiLambdaVersionnHIge6jlB7WWq1lnBXbuv7SWnILlENXgx8uPKPmmDls"
       }
     },
     "configValidationMode": "warn",
@@ -512,7 +512,7 @@
         ],
         "artifactsS3KeyDirname": "serverless/shastik-fashion-backend/dev/code-artifacts",
         "artifact": "C:\\Users\\admin\\Desktop\\Gokul-ecom\\shastik_fashions_backend\\.serverless\\shastik-fashion-backend.zip",
-        "artifactDirectoryName": "serverless/shastik-fashion-backend/dev/1767096754197-2025-12-30T12:12:34.197Z"
+        "artifactDirectoryName": "serverless/shastik-fashion-backend/dev/1767114481748-2025-12-30T17:08:01.748Z"
       }
     },
     "layers": {},
@@ -520,7 +520,7 @@
     "artifact": "C:\\Users\\admin\\Desktop\\Gokul-ecom\\shastik_fashions_backend\\.serverless\\shastik-fashion-backend.zip"
   },
   "package": {
-    "artifactDirectoryName": "serverless/shastik-fashion-backend/dev/1767096754197-2025-12-30T12:12:34.197Z",
+    "artifactDirectoryName": "serverless/shastik-fashion-backend/dev/1767114481748-2025-12-30T17:08:01.748Z",
     "artifact": "shastik-fashion-backend.zip"
   }
 }

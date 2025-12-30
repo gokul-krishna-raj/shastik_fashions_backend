@@ -45,13 +45,51 @@ app.use(express.urlencoded({ extended: true }));
 // Logger middleware
 app.use(logger);
 app.use((req, res, next) => {
-  if (typeof req.body === 'string') {
-    try {
-      req.body = JSON.parse(req.body);
-    } catch {
-      req.body = {};
+  // Handle Lambda body types
+  if (req.body) {
+    // 1. If it's a string, try parsing it
+    if (typeof req.body === 'string') {
+      try {
+        req.body = JSON.parse(req.body);
+      } catch {
+        // Not JSON string or already parsed partially, ignore
+      }
+    }
+    // 2. If it's a Buffer object, convert to string and parse
+    else if (Buffer.isBuffer(req.body)) {
+      try {
+        req.body = JSON.parse(req.body.toString());
+      } catch {
+        // Not JSON
+      }
+    }
+    // 3. If it's the JSON representation of a Buffer: { type: "Buffer", data: [...] }
+    else if (typeof req.body === 'object' && (req.body as any).type === 'Buffer' && Array.isArray((req.body as any).data)) {
+      try {
+        const buffer = Buffer.from((req.body as any).data);
+        req.body = JSON.parse(buffer.toString());
+      } catch {
+        // Not JSON
+      }
     }
   }
+
+  // Also check the apiGateway event if body is still empty
+  if (process.env.AWS_LAMBDA_FUNCTION_NAME && (!req.body || (typeof req.body === 'object' && Object.keys(req.body).length === 0))) {
+    const event = (req as any).apiGateway?.event;
+    if (event?.body) {
+      let body = event.body;
+      if (event.isBase64Encoded) {
+        body = Buffer.from(body, 'base64').toString('utf8');
+      }
+      try {
+        req.body = JSON.parse(body);
+      } catch (e) {
+        // Not JSON
+      }
+    }
+  }
+
   console.log('Lambda Request Body type:', typeof req.body);
   console.log('Lambda Request Body:', JSON.stringify(req.body));
   next();
