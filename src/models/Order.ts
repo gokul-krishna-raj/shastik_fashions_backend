@@ -10,7 +10,16 @@ export interface IOrder extends Document {
       image?: string;
     };
   }[];
-  shippingAddress: string;
+  shippingAddress: {
+    fullName: string;
+    phone: string;
+    email: string;
+    addressLine1: string;
+    city: string;
+    state: string;
+    pincode: string;
+    country: string;
+  };
   totalAmount: number;
   paymentStatus: 'pending' | 'paid' | 'failed';
   orderStatus: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
@@ -18,6 +27,14 @@ export interface IOrder extends Document {
   razorpayPaymentId?: string;
   razorpaySignature?: string;
   estimatedDelivery?: Date;
+  trackingId?: string;
+  carrier?: string;
+  trackingUrl?: string;
+  trackingHistory?: {
+    status: string;
+    message: string;
+    timestamp: Date;
+  }[];
 }
 
 const OrderSchema: Schema = new Schema(
@@ -87,6 +104,22 @@ const OrderSchema: Schema = new Schema(
     estimatedDelivery: {
       type: Date,
     },
+    trackingId: {
+      type: String,
+    },
+    carrier: {
+      type: String,
+    },
+    trackingUrl: {
+      type: String,
+    },
+    trackingHistory: [
+      {
+        status: { type: String, required: true },
+        message: { type: String, required: true },
+        timestamp: { type: Date, default: Date.now },
+      },
+    ],
   },
   {
     timestamps: true,

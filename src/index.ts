@@ -24,7 +24,8 @@ const port = process.env.PORT || 5000;
 // Security Middlewares
 app.use(helmet()); // Set security headers
 app.use(cors({
-  origin: 'https://shastikfashion.vercel.app',
+  origin: '*',
+  // origin: 'https://shastikfashion.vercel.app',
   credentials: true,
 }));
 // app.options('*', cors());

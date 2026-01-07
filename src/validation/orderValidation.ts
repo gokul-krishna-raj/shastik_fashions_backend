@@ -91,3 +91,12 @@ export const confirmOrderSchema = Joi.object({
 
   totalAmount: Joi.number().positive().required(),
 });
+
+export const updateOrderTrackingSchema = Joi.object({
+  trackingId: Joi.string().optional(),
+  carrier: Joi.string().optional(),
+  trackingUrl: Joi.string().uri().optional(),
+  status: Joi.string().optional(),
+  message: Joi.string().optional(),
+});
+

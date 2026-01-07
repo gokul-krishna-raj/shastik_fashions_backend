@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import mongoose from 'mongoose';
 import crypto from 'crypto';
 import Order from '../models/Order';
 import Product from '../models/Product';
@@ -135,6 +136,11 @@ export const confirmOrder = async (req: CustomRequest, res: Response) => {
       razorpaySignature: paymentMethod === 'Razorpay' ? razorpaySignature : null,
       orderStatus: 'processing',
       estimatedDelivery,
+      trackingHistory: [{
+        status: 'processing',
+        message: 'Order is being processed',
+        timestamp: new Date()
+      }]
     });
 
     // Deduct stock per item
@@ -252,10 +258,13 @@ export const confirmOrder = async (req: CustomRequest, res: Response) => {
 // @access  Private
 export const getOrderById = async (req: CustomRequest, res: Response) => {
   try {
-    const order = await Order.findById(req.params.orderId)
+    const { orderId } = req.params;
+    const isMongoId = mongoose.Types.ObjectId.isValid(orderId);
+    const query = isMongoId ? { _id: orderId } : { razorpayOrderId: orderId };
+
+    const order = await Order.findOne(query)
       .populate('user', 'name email')
-      .populate('products.product', 'name price image')
-      .populate('shippingAddress');
+      .populate('products.product', 'name price image');
 
 
 
@@ -411,9 +420,15 @@ export const getUserOrders = async (req: CustomRequest, res: Response) => {
 export const updateOrderStatus = async (req: CustomRequest, res: Response) => {
   try {
     const { status } = req.body;
-    console.log("req.params =>", req.params.orderId);
+    const { orderId } = req.params;
+    const isMongoId = mongoose.Types.ObjectId.isValid(orderId);
+    let order;
 
-    let order = await Order.findById(req.params.orderId);
+    if (isMongoId) {
+      order = await Order.findById(orderId);
+    } else {
+      order = await Order.findOne({ razorpayOrderId: orderId });
+    }
 
     if (!order) {
       return apiResponse(res, {
@@ -424,6 +439,12 @@ export const updateOrderStatus = async (req: CustomRequest, res: Response) => {
     }
 
     order.orderStatus = status;
+    order.trackingHistory = order.trackingHistory || [];
+    order.trackingHistory.push({
+      status,
+      message: `Order status updated to ${status}`,
+      timestamp: new Date()
+    });
     await order.save();
 
     apiResponse(res, {
@@ -441,3 +462,130 @@ export const updateOrderStatus = async (req: CustomRequest, res: Response) => {
     });
   }
 };
+
+// @desc    Update order tracking information (Admin only)
+// @route   PUT /api/orders/:orderId/tracking
+// @access  Private/Admin
+export const updateOrderTracking = async (req: CustomRequest, res: Response) => {
+  try {
+    const { trackingId, carrier, trackingUrl, status, message } = req.body;
+    const { orderId } = req.params;
+    const isMongoId = mongoose.Types.ObjectId.isValid(orderId);
+    let order;
+
+    if (isMongoId) {
+      order = await Order.findById(orderId);
+    } else {
+      order = await Order.findOne({ razorpayOrderId: orderId });
+    }
+
+    if (!order) {
+      return apiResponse(res, {
+        success: false,
+        statusCode: 404,
+        message: 'Order not found',
+      });
+    }
+
+    if (trackingId) order.trackingId = trackingId;
+    if (carrier) order.carrier = carrier;
+    if (trackingUrl) order.trackingUrl = trackingUrl;
+
+    if (status) {
+      order.trackingHistory = order.trackingHistory || [];
+      order.trackingHistory.push({
+        status,
+        message: message || `Order status updated to ${status}`,
+        timestamp: new Date(),
+      });
+
+      // Also update the main orderStatus if it's one of the valid enums
+      const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+      if (validStatuses.includes(status.toLowerCase())) {
+        order.orderStatus = status.toLowerCase() as any;
+      }
+    }
+
+    await order.save();
+
+    apiResponse(res, {
+      statusCode: 200,
+      success: true,
+      data: order,
+      message: 'Order tracking updated successfully',
+    });
+  } catch (error: any) {
+    console.error(error.message);
+    apiResponse(res, {
+      success: false,
+      statusCode: 500,
+      message: 'Server Error',
+      stack: error.stack,
+    });
+  }
+};
+
+// @desc    Track order (Public)
+// @route   GET /api/orders/track/:orderId
+// @access  Public
+export const trackOrder = async (req: CustomRequest, res: Response) => {
+  try {
+    const { orderId } = req.params;
+    const { email, phone } = req.query;
+
+    if (!email && !phone) {
+      return apiResponse(res, {
+        success: false,
+        statusCode: 400,
+        message: 'Please provide email or phone number to track order',
+      });
+    }
+
+    const isMongoId = mongoose.Types.ObjectId.isValid(orderId);
+    let order;
+
+    const query = isMongoId ? { _id: orderId } : { razorpayOrderId: orderId };
+
+    order = await Order.findOne(query)
+      .populate('products.product', 'name price image')
+      .select('orderStatus estimatedDelivery trackingId carrier trackingUrl trackingHistory shippingAddress createdAt');
+
+    if (!order) {
+      return apiResponse(res, {
+        success: false,
+        statusCode: 404,
+        message: 'Order not found',
+      });
+    }
+
+    // Verify ownership via email or phone
+    const orderEmail = order.shippingAddress.email.toLowerCase();
+    const orderPhone = order.shippingAddress.phone;
+
+    const isAuthorized = (email && String(email).toLowerCase() === orderEmail) ||
+      (phone && String(phone) === orderPhone);
+
+    if (!isAuthorized) {
+      return apiResponse(res, {
+        success: false,
+        statusCode: 401,
+        message: 'Unauthorized: Email or Phone does not match our records for this order',
+      });
+    }
+
+    apiResponse(res, {
+      statusCode: 200,
+      success: true,
+      data: order,
+      message: 'Order tracking details fetched successfully',
+    });
+  } catch (error: any) {
+    console.error(error.message);
+    apiResponse(res, {
+      success: false,
+      statusCode: 500,
+      message: 'Server Error',
+    });
+  }
+};
+
